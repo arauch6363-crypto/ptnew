@@ -30,10 +30,10 @@
 
 /** Google Drive File-ID des PT_WORKFLOW.ipynb
  *  Aus der URL: colab.research.google.com/drive/<FILE_ID>  */
-var NOTEBOOK_FILE_ID = 'DEINE_NOTEBOOK_FILE_ID_HIER_EINSETZEN';
+var NOTEBOOK_FILE_ID = '1PZYNGKZB_vDUvWIssDXil8hQaXlZ9q_w';
 
 /** E-Mail für Erfolgs-/Fehlermeldungen (leer lassen = keine Mail) */
-var NOTIFY_EMAIL = '';
+var NOTIFY_EMAIL = 'arauch6363@gmail.com';
 
 /** CPU-only reicht für den Workflow (kein GPU nötig) */
 var ACCELERATOR = 'NONE';   // Alternativen: 'GPU', 'TPU'
