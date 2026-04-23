@@ -91,64 +91,212 @@ VERDICT_SYSTEM_PROMPT = """You are an expert horse racing analyst writing race c
 STATISTICS REFERENCE
 ════════════════════
 
+── HORSE HEADER ──────────────────────────────────────────────────────────────
+
 val (Adjusted Valuation) = handicapRatingKg − weightKg + 55
   Measures how well a horse is handicapped relative to its assigned weight.
   Higher = horse carries less weight relative to its official rating → potential advantage.
-  Compare horses' val scores within the same race to spot handicap edges.
+  Compare val scores within the same race to spot handicap edges.
+  A percentile circle next to val shows rank within today's field (top = green, bottom = red).
 
 rtr (Adjusted Race Rating) = rating_after_race − weightKg + 55
-  Weight-adjusted performance rating from the horse's most recent run.
-  If rtr > val: showed better form than its rating suggests → improving.
+  Weight-adjusted performance rating from the horse's most recent completed run.
+  If rtr > val: showed better form than its official rating implies → improving horse.
   If rtr < val: underperformed last time out → may need to bounce back.
+  A percentile circle next to rtr shows rank within today's field.
 
-A/E (Actual / Expected ratio)
-  Compares actual wins/places to statistically expected based on starting prices.
-  > 1.0: consistently outperforms market expectations (strong positive signal)
-  ≈ 1.0: performs as expected
-  < 0.9: consistently underperforms (caution flag)
-  Applies to horse, trainer, jockey, and sire. High trainer A/E with a booking is significant.
-
-€/R (Prize money per run, median for sires)
-  Reflects the class of competition the entity typically operates at.
-  High €/R = operates in valuable/prestigious races.
-
-R/W/P (Runs / Wins / Places) with Win% and Place%
-  Raw career record. High place% with low win% = consistent but often finds one too good.
-  Small sample sizes (< 10 runs) reduce statistical reliability.
+SP (Starting Price from expert tipster)
+  The pre-race market price assigned by the race card's selected tipster.
+  Low SP = shorter-priced selection; high SP = outsider assessment.
 
 days_since_last_run
-  Fitness indicator. > 90 days: possible return from a break, may need the run.
-  14–30 days: typically fresh and race-fit.
+  Fitness indicator. Highlighted yellow when > 60 days (potential fitness concern).
+  < 14 days: very quick turnaround.
+  14–45 days: typical race-fit interval.
+  > 90 days: likely returning from a break — may need the run.
 
-going_category (track condition, normalised)
+── EQUIPMENT & CHANGES ───────────────────────────────────────────────────────
+
+Blinkers (B) / Hood (H)  [equip_html]
+  Current headgear listed in the horse's name row.
+  B: blinkers fitted (focus aid). H: hood fitted.
+
+Headgear change  [👓 B-Change / 🎩 H-Change]
+  Alert when blinkers or hood differ from last race.
+  First-time blinkers/hood: often a sharpening agent — frequently a positive.
+  Removed headgear: may indicate the previous application wasn't working.
+
+Trainer change  [🔄 T-Change]
+  Previous trainer name shown alongside the badge.
+  The previous trainer's pp365 value (average pos_perc last 365 days) is shown in colour:
+    green = previous trainer had strong record (pp365 < 0.45 = horses finished close to front)
+    red   = previous trainer had weak record (pp365 > 0.55)
+  A switch away from a strong trainer raises a flag; away from a weak one may be a positive.
+
+Owner change  [👤 O-Change]
+  Previous owner shown alongside the badge, with their pp365 in the same colour scheme.
+  A change of ownership can signal a fresh start or a horse being moved up/down in class.
+
+── HORSE CAREER STATS (left column) ─────────────────────────────────────────
+
+R/W/P (Runs / Wins / Places) with Win% and Place%
+  Career record of the horse (filtered to races with qualifying odds).
+  High place% with low win% = consistent but often finds one too good.
+  Small sample sizes (< 10 runs) reduce statistical reliability.
+
+A/E (Actual / Expected ratio — place-based)
+  Compares actual place count to statistically expected places from starting prices.
+  > 1.0: outperforms market expectations consistently (strong positive signal).
+  ≈ 1.0: performs as expected by the market.
+  < 0.9: consistently underperforms relative to price (caution flag).
+  A percentile circle indicates rank vs. all horses in today's field.
+
+€/R (Prize money per run)
+  Average prize money per run — class indicator.
+  High €/R = regularly runs in valuable/prestigious races.
+  A percentile circle shows rank vs. today's field.
+
+Condition panel — by Distance and Going  [_horse_condition_panel_html]
+  Two mini-tables showing the horse's R / W/P / W%/P% split by:
+  • Distance group (e.g. "1401–1600m", "1601–1800m", "1801–2000m")
+  • Going category (VERY SLOW / SLOW / MEDIUM / FAST / VERY FAST)
+  Today's applicable row is highlighted green with a ▶ marker.
+  Use these to assess whether the horse has a proven record at today's trip and ground.
+  Win% ≥ 20% in a going/distance bucket = strong affinity.
+
+Preference chips  [prefs_html] — t-test badges on the horse column
+  Statistical comparison of pos_perc when the horse runs at today's condition vs. other conditions.
+  Each chip shows:  [icon] [condition label]  [t-statistic]  [★ if p < 0.05]
+  t > 0 (green chip): horse finishes relatively better at this condition.
+  t < 0 (red chip): horse finishes relatively worse at this condition.
+  Chips shown for: 📍 Meeting,  📏 Distance group,  🌱 Going category.
+  ★ = statistically significant preference (p < 0.05). Treat unsigned chips with smaller n cautiously.
+
+── TRAINER / JOCKEY / SIRE COLUMNS ──────────────────────────────────────────
+
+Each entity column shows:
+  Label (Trainer / Jockey / Sire) + entity name.
+
+R/W/P with Win% and Place%  (same interpretation as horse, for the entity)
+
+A/E (place-based) with percentile circle
+  Green ≥ 1.0 (outperforms), red < 0.9 (underperforms).
+
+€/R with percentile circle
+  For sires this is the median prize per run across all progeny — class-of-offspring indicator.
+
+pp365 (Average pos_perc last 365 days)
+  Average finishing position percentile over the last 365 days.
+  pos_perc = (finishing position − 1) ÷ (field size − 1) → 0 = winner, 1 = last.
+  Lower pp365 = horses/horses ridden finish closer to the front → positive signal.
+  pp365 ≈ 0.40 or below is a strong trainer/jockey record.
+  A percentile circle shows rank vs. all trainers/jockeys/sires in today's field.
+
+Hot/cold badge  [hc_html — shown next to trainer and jockey name]
+  Based on pos_perc trend over the last 21 days vs. background rate.
+  🔥 Hot = recently finishing ahead of expected; ❄️ Cold = below expected.
+  n = number of runners in the window; shown with the badge for context.
+
+Preference chips  [prefs_html] — t-test badges on entity columns
+  Trainer chips: 🏇 Jockey (today's jockey+trainer combo), 👤 Owner, 📍 Meeting, 🏆 RaceType.
+  Jockey chips:  🎩 Trainer, 📍 Meeting.
+  Sire chips:    📏 Distance, 🌱 Going, 🎂 Age group.
+  Same interpretation as horse chips: green = positive preference, red = negative, ★ = significant.
+
+── FORM CONTEXT TABLE ────────────────────────────────────────────────────────
+
+The form table shows up to the last 5 races (columns = races, oldest left, most recent right).
+Each row covers one aspect of that race. Rows:
+
+Date        Race date (YYYY-MM-DD or DD.MM).
+
+Info        Short description: meeting, distance, race type, class.
+
+Cond        Going + distance condition badge for that race (same scale as today's going_category).
+            Medal background (gold / silver / bronze) when horse finished 1st / 2nd / 3rd.
+            A dot (·) means no special condition flag.
+
+€/R         Average prize money of that race (colored by percentile vs. all historical races).
+            Higher = higher class of race; helps assess class profile over recent starts.
+
+Res         Finishing result: "pos/runners" (e.g. "2/9" = 2nd of 9).
+            Gold = 1st, silver = 2nd, bronze = 3rd.
+            Below the result: lengths margin (e.g. "3.5l" = beaten 3.5 lengths).
+            Below that: SP (starting price for that run, e.g. "4.5/1").
+            📓 notepad icon = Claude previously flagged this run as an unlucky run or a notably
+              strong finish. Weight this positively when the result looks worse than the run.
+
+Val.        Adjusted valuation (handicapRatingKg − weightKg + 55) for that run.
+            Colored by percentile vs. all historical val values.
+            Compare to today's val — rising val over recent runs suggests the horse is improving
+            relative to its weights.
+
+ARR         Adjusted Racing Rating for that run, further adjusted to today's weight for comparability.
+            Colored by percentile vs. all historical ARR values.
+            ARR trend: consistently rising ARR = improving horse; declining = deteriorating form.
+
+FF          Field Form — average ARR delta of other field members who ran again after this race.
+            Positive (green): the field subsequently improved → this was a quality race, form is franked.
+            Negative (red): field declined on next start → race may have been lower quality.
+            n = number of field members with a subsequent run to measure.
+
+Jcky        Jockey in that race (abbreviated: "F. Surname").
+
+Draw        Stall number for that race + draw bias below it.
+            Draw bias = avg pos_perc for that draw position − 0.5.
+            Positive (green): that stall tends to produce horses finishing above mid-field.
+            Negative (red): that stall tends to produce worse-than-midfield finishes.
+            n = sample size used to compute the bias.
+
+Opp         Today's other starters who were in this same historical race.
+            Shows their name and the ARR difference: positive = this horse beat them convincingly,
+            negative = they had the better of this horse.
+
+Opp2        Indirect form links: horse A met horse X in this race; X also met horse B (another
+            today-starter) in a separate race within 365 days. Shows the score bridging A→B via X.
+            Allows comparison between horses that have never met directly.
+
+── KEY DERIVED METRICS ───────────────────────────────────────────────────────
+
+pos_perc = (finishing position − 1) ÷ (field size − 1)
+  0 = winner, 1 = last. Scale-invariant across field sizes.
+  Used in: draw bias, entity pp365, preference chips, hot/cold badge.
+
+draw_pp_html  (Draw bias shown in the horse header)
+  The historical average pos_perc for horses drawn from this stall, minus 0.5.
+  Positive (green) = stall favours finishing closer to front vs. midfield.
+  Negative (red)   = stall disadvantages horses historically.
+  Include this only if n ≥ ~15 to carry meaningful weight.
+
+going_category  (Normalised track condition)
   VERY SLOW → SLOW → MEDIUM → FAST → VERY FAST
-  Compare to the horse's A/E or win% broken down by going category for going preferences.
+  Used in condition panel and preference chips. Today's going is highlighted in the condition table.
 
-distance_m (race distance in metres)
-  Compare to horse's best trips from recent form — a step up or drop in trip matters.
+distance_group  (Distance bucket)
+  Races grouped by distance range, e.g. "1401–1600m", "1601–1800m".
+  Used in condition panel and preference chips.
 
-Equipment changes
-  blinkers_on / hood_on (first-time): often a sharpening agent, frequently a positive.
-  blinkers_off: may indicate headgear wasn't working.
+ARR (Adjusted Racing Rating)
+  A per-run performance index, weight-adjusted. Higher = stronger run.
+  In the form table ARR is further re-adjusted to today's carry weight for fair comparison.
+  Rising ARR over last 3+ runs = genuine improvement; a single high ARR on a soft day needs context.
 
-Trainer / Jockey changes
-  New jockey booking: assess jockey's overall A/E and win% for context.
-  Stable change: significant — may indicate dissatisfaction or a fresh start.
-
-recent_form entries (oldest → most recent in the list)
-  pos / field: finishing position out of field size (e.g. 2 of 9 = second of nine)
-  sp: starting price — was the horse well-backed or sent off a big price?
-  Trend: improving positions combined with shortening prices = horse coming into form.
-  No recent form entries: lightly raced or long absence.
+FF (Field Form quality index)
+  Positive FF = subsequent improvement by the field = the race was a good-quality trial.
+  Negative FF = field regressed = the run may be less reliable as form.
 
 WRITING STYLE
   — 3 to 5 short sentences per horse, no more
   — Lead with the single strongest factor (form trend, handicap edge, key booking)
-  — Note any meaningful risk or concern (poor going record, long absence, big weights)
+  — Note any meaningful risk or concern (poor going record, long absence, big weights, draw)
+  — Draw on condition panel, preference chips, and form table trends where they are clear
+  — Mention ARR trend only if clearly rising or declining across ≥ 3 runs
+  — Flag trainer/jockey changes and headgear changes when they are notable
   — Be direct; avoid hedging phrases like "could" or "might possibly"
   — Do not invent information absent from the data
   — Use racing vocabulary: "well handicapped", "consistent at the level",
-    "stable switch", "step up in trip", "market springer", "hold-up horse", etc."""
+    "stable switch", "step up in trip", "market springer", "hold-up horse",
+    "progressive profile", "flagged unlucky run", "strong form franked by FF", etc."""
 
 
 def _ensure_date_col(df):
@@ -846,7 +994,6 @@ def export_all_races_html(df_hist, df_today,
                           odds_min=1.1, odds_max=1.4,
                           notepad_flags=None,
                           pmu_odds_history=None,
-                          horse_verdicts=None,
                           output_dir=None):
     import os, datetime as _dt
 
@@ -867,7 +1014,8 @@ def export_all_races_html(df_hist, df_today,
     today_str = _dt.date.today().strftime('%Y-%m-%d')
     print(f'🏇 Exporting {total_races} races across {len(meetings)} meetings...')
 
-    saved = []
+    saved      = []
+    race_jsons = {}   # {race_key: race_json} — same data as HTML, built once
 
     for meeting in meetings:
         print(f'\n📍 {meeting}')
@@ -913,6 +1061,7 @@ def export_all_races_html(df_hist, df_today,
                         sfx = 'fillies & mares' if (hf and hm2) else ('fillies' if hf else 'mares')
                         age_range_str += ' ' + sfx
 
+            total_prize_raw = None
             if races_tdy is not None:
                 mask = pd.Series([True]*len(races_tdy))
                 if 'name_meeting' in races_tdy.columns: mask &= races_tdy['name_meeting'] == meeting
@@ -925,7 +1074,8 @@ def export_all_races_html(df_hist, df_today,
                             if not pv.empty:
                                 try:
                                     fv = float(pv.iloc[0])
-                                    total_prize = '€'+(f'{fv/1000:.0f}k' if fv>=1000 else f'{fv:.0f}')
+                                    total_prize     = '€'+(f'{fv/1000:.0f}k' if fv>=1000 else f'{fv:.0f}')
+                                    total_prize_raw = fv
                                 except: pass
                                 break
                     for cc in ('class','raceClass'):
@@ -968,22 +1118,25 @@ def export_all_races_html(df_hist, df_today,
                             f'{vt}</div>'
                         )
 
-            # ── runners ───────────────────────────────────────────
-            runners_html = _render_runners_html(
+            # ── runners (also returns race JSON built from the same data) ──────
+            runners_html, _race_json = _render_runners_html(
                 race_rows, df_hist,
                 today_tips=today_tips,
                 df_with_ratings=df_with_ratings,
                 odds_min=odds_min, odds_max=odds_max,
                 notepad_flags=notepad_flags,
                 pmu_odds_history=pmu_odds_history,
-                horse_verdicts=horse_verdicts,
             )
+            # Augment with race-level fields not available inside _render_runners_html
+            _race_json['total_prize_eur'] = total_prize_raw
+            _race_json['race_class']      = race_class
 
             # ── assemble page ─────────────────────────────────────
             import re
             safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', f'{meeting}__{race}')
             filename  = f'{today_str}__{safe_name}.html'
             filepath  = os.path.join(output_dir, filename)
+            race_jsons[f'{today_str}__{safe_name}'] = _race_json
 
             page_html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -1010,166 +1163,12 @@ def export_all_races_html(df_hist, df_today,
             saved.append(filename)
 
     print(f'\n✅ Done — {len(saved)} files saved to {output_dir}')
-    return saved
+    return saved, race_jsons
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Verdict helpers: JSON builder + Claude API call
+# Verdict helpers: Claude API call + fast HTML injection
 # ─────────────────────────────────────────────────────────────────────────────
-
-def build_race_json(race_rows, df_hist, today_tips=None, races_tdy=None):
-    """Return a structured dict for one race suitable as Claude input."""
-    import datetime as _dt2
-
-    if race_rows.empty:
-        return {}
-
-    def _sv(r, col, default=''):
-        v = r.get(col, default) if hasattr(r, 'get') else getattr(r, col, default)
-        return '' if (v is None or (isinstance(v, float) and pd.isna(v))) else v
-
-    def _nv(r, col):
-        v = r.get(col, None) if hasattr(r, 'get') else getattr(r, col, None)
-        try:
-            f = float(v)
-            return None if pd.isna(f) else round(f, 2)
-        except Exception:
-            return None
-
-    first = race_rows.iloc[0]
-    meeting   = _sv(first, 'name_meeting')
-    race_name = _sv(first, 'name_race')
-    going     = _sv(first, 'going')
-    going_cat = _sv(first, 'going_category')
-    distance  = _nv(first, 'distance')
-    race_type = _sv(first, 'type') or _sv(first, 'raceType')
-
-    total_prize = None
-    race_class  = ''
-    if races_tdy is not None and 'name_meeting' in races_tdy.columns:
-        mask = (races_tdy['name_meeting'] == meeting) & (races_tdy['name_race'] == race_name)
-        matched = races_tdy[mask]
-        if not matched.empty:
-            for pc in ('totalPrize', 'raceTotalPrize', 'prize'):
-                if pc in matched.columns:
-                    pv = matched[pc].dropna()
-                    if not pv.empty:
-                        try: total_prize = float(pv.iloc[0])
-                        except: pass
-                        break
-            for cc in ('class', 'raceClass'):
-                if cc in matched.columns:
-                    cv = matched[cc].dropna()
-                    if not cv.empty:
-                        race_class = str(cv.iloc[0]).strip()
-                        break
-
-    # SP tips lookup
-    sp_lookup = {}
-    if today_tips is not None and 'horse' in today_tips.columns:
-        for _, tr in today_tips.iterrows():
-            sp_lookup[str(tr['horse'])] = tr.get('SP')
-
-    # Precompute entity stats (avoid repeated full-scan per horse)
-    def _estats(df_sub):
-        if df_sub is None or df_sub.empty:
-            return {}
-        runs = len(df_sub)
-        wins = int((df_sub['ranking'] == 1).sum()) if 'ranking' in df_sub.columns else 0
-        plcs = int((df_sub['ranking'] <= 3).sum()) if 'ranking' in df_sub.columns else 0
-        ae = None
-        if 'liveOdd' in df_sub.columns and 'ranking' in df_sub.columns:
-            odds_s = pd.to_numeric(df_sub['liveOdd'], errors='coerce').dropna().clip(lower=1.01)
-            exp = (1 / odds_s).sum()
-            if exp > 0:
-                ae = round(wins / exp, 2)
-        prize = None
-        for pc in ('totalPrize', 'raceTotalPrize', 'prize'):
-            if pc in df_sub.columns:
-                pv = pd.to_numeric(df_sub[pc], errors='coerce').dropna()
-                if not pv.empty:
-                    prize = round(float(pv.mean()))
-                    break
-        return {
-            'runs': runs, 'wins': wins, 'places': plcs,
-            'win_pct': round(100 * wins / runs, 1) if runs else 0,
-            'place_pct': round(100 * plcs / runs, 1) if runs else 0,
-            'ae': ae, 'prize_per_run': prize,
-        }
-
-    horses_out = []
-    today_ = _dt2.date.today()
-
-    for _, r in race_rows.iterrows():
-        hname   = _sv(r, 'horseName')
-        hid_raw = r.get('horseId', None)
-        trainer = _sv(r, 'trainerName')
-        jockey  = _sv(r, 'jockeyName')
-        sire    = _sv(r, 'horseSir')
-
-        hcap = _nv(r, 'handicapRatingKg')
-        wt   = _nv(r, 'weightKg')
-        rtar = _nv(r, 'rating_after_race')
-        val_ = round(hcap - wt + 55, 1) if (hcap is not None and wt is not None) else None
-        rtr_ = round(rtar - wt + 55, 1) if (rtar is not None and wt is not None) else None
-
-        # Entity history slices
-        h_sub = df_hist[df_hist['horseId'] == hid_raw].copy() if (hid_raw is not None and 'horseId' in df_hist.columns) else pd.DataFrame()
-        t_sub = df_hist[df_hist['trainerName'] == trainer] if trainer else pd.DataFrame()
-        j_sub = df_hist[df_hist['jockeyName']  == jockey]  if jockey  else pd.DataFrame()
-        s_sub = df_hist[df_hist['horseSir']     == sire]    if sire    else pd.DataFrame()
-
-        # Days since last run
-        days_since = None
-        if not h_sub.empty and 'date' in h_sub.columns:
-            last_dt = pd.to_datetime(h_sub['date'], errors='coerce').dropna()
-            if not last_dt.empty:
-                days_since = (today_ - last_dt.max().date()).days
-
-        # Recent form (last 5 races)
-        recent_form = []
-        if not h_sub.empty and 'date' in h_sub.columns:
-            for _, fr in h_sub.sort_values('date').tail(5).iterrows():
-                pos = None
-                try: pos = int(fr['ranking'])
-                except Exception: pass
-                field_sz = None
-                try: field_sz = int(fr['runners'])
-                except Exception: pass
-                sp_f = None
-                try:
-                    _sp = float(fr.get('liveOdd', float('nan')))
-                    sp_f = round(_sp, 1) if not pd.isna(_sp) else None
-                except Exception: pass
-                recent_form.append({
-                    'date': str(fr.get('date', ''))[:10],
-                    'pos': pos, 'field': field_sz, 'sp': sp_f,
-                    'going_cat': str(fr.get('going_category', '')),
-                    'dist_m': _nv(fr, 'distance'),
-                })
-
-        horses_out.append({
-            'name': hname,
-            'draw': _sv(r, 'draw') or _nv(r, 'draw'),
-            'age': _nv(r, 'age'), 'sex': _sv(r, 'sex'),
-            'weight_kg': wt, 'val': val_, 'rtr': rtr_,
-            'days_since_last_run': days_since,
-            'sp_tip': sp_lookup.get(hname),
-            'horse_stats': _estats(h_sub),
-            'trainer': {'name': trainer, **_estats(t_sub)},
-            'jockey': {'name': jockey,  **_estats(j_sub)},
-            'sire':   {'name': sire,    **_estats(s_sub)},
-            'recent_form': recent_form,
-        })
-
-    return {
-        'meeting': meeting, 'race': race_name,
-        'date': str(today_),
-        'going': going, 'going_category': going_cat,
-        'distance_m': distance, 'race_type': race_type,
-        'race_class': race_class, 'total_prize_eur': total_prize,
-        'field_size': len(horses_out), 'horses': horses_out,
-    }
 
 
 def generate_race_verdicts(race_json, api_key):
@@ -1185,8 +1184,21 @@ def generate_race_verdicts(race_json, api_key):
     horse_names = [h['name'] for h in race_json.get('horses', [])]
 
     user_msg = (
-        'Write a short Racing Post style verdict for each horse below.\n'
-        'Maximum 3–5 concise sentences per horse. Be direct and factual.\n\n'
+        'Write a Racing Post style verdict for each horse in this race.\n'
+        '3–5 concise sentences per horse. Be direct and factual.\n\n'
+        'Key fields to interpret (see system prompt for full reference):\n'
+        '  val / rtr         — handicap edge vs last-run form\n'
+        '  horse_stats ae_place — place A/E (>1.0 outperforms market)\n'
+        '  trainer/jockey ae_place + pp365 — handler quality signal\n'
+        '  condition_panel by_going/by_dist — going + distance record\n'
+        '  change_alerts     — headgear, trainer, owner changes\n'
+        '  draw_bias         — stall pos_perc bias (positive = favours front)\n'
+        '  recent_form[].notepad — 📓 unlucky/strong run flagged by AI\n'
+        '  recent_form[].adj_arr — ARR re-adjusted to today\'s weight (trend signal)\n'
+        '  recent_form[].opp — today\'s opponents met in the same past race:\n'
+        '      arr_diff > 0 = this horse outperformed them on ARR\n'
+        '      arr_diff < 0 = they outperformed this horse\n'
+        '      their_pos = where the opponent finished in that race\n\n'
         'Return ONLY a valid JSON object — no markdown, no extra text.\n'
         f'Keys must be exactly: {_json.dumps(horse_names)}\n\n'
         f'Race data:\n{_json.dumps(race_json, indent=2, default=str)}'
@@ -1194,7 +1206,7 @@ def generate_race_verdicts(race_json, api_key):
 
     resp = client.messages.create(
         model='claude-sonnet-4-6',
-        max_tokens=2048,
+        max_tokens=4096,
         system=VERDICT_SYSTEM_PROMPT,
         messages=[{'role': 'user', 'content': user_msg}],
     )
@@ -2017,9 +2029,12 @@ def _render_runners_html(race_rows, runners_hist,
                                 opp_entries.append((_opp_name, round(_adj, 1)))
 
                     ctx_entries.append({
-                        'race_id':    race_id,
-                        'date_str':   run_date_str,
-                        'cond_flag':  cond_flag,
+                        'race_id':       race_id,
+                        'date_str':      run_date_str,
+                        'cond_flag':     cond_flag,
+                        'going_cat_raw': str(race_row.get('going_category', '') or ''),
+                        'dist_grp_raw':  str(race_row.get('distance_group', '') or ''),
+                        'dist_m_raw':    (float(race_row['distance']) if race_row.get('distance') is not None and pd.notna(race_row.get('distance')) else None),
                         'pos':        run_pos,
                         'ranking':    run_ranking,
                         'runners':    run_runners,
@@ -2818,6 +2833,8 @@ def _render_runners_html(race_rows, runners_hist,
         except Exception:
             pass  # silently skip if data insufficient
 
+    import re as _re_safe
+    _race_json_horses = []
     cards_html = []
     for _, r in rows.iterrows():
         horse   = _s(r, 'horseName')
@@ -2941,6 +2958,7 @@ def _render_runners_html(race_rows, runners_hist,
                 'padding:1px 7px;font-size:10px;border:1px solid #b8d9f2">H: ' + hood_v + '</span>')
         equip_html = ' '.join(equip_parts)
 
+        _horse_change_alerts = []   # structured data collected alongside HTML alerts
         headgear_change_html = ''
         if runners_hist is not None and hid and 'horseId' in runners_hist.columns:
             _h_hist = runners_hist[runners_hist['horseId'].astype(str) == hid]
@@ -2964,6 +2982,9 @@ def _render_runners_html(race_rows, runners_hist,
                         'padding:2px 8px;font-size:10px;font-weight:bold;white-space:nowrap;'
                         f'border:1px solid #e55a26" title="{_label}">👓 B-Change</span>'
                     )
+                    _horse_change_alerts.append({'type': 'blinkers_change',
+                                                 'from': _prev_blink or 'none',
+                                                 'to':   _today_blink or 'none'})
                 if _today_hood != _prev_hood:
                     _label = f'Hood: {_prev_hood or "none"} → {_today_hood or "none"}'
                     _hg_alerts.append(
@@ -2971,6 +2992,9 @@ def _render_runners_html(race_rows, runners_hist,
                         'padding:2px 8px;font-size:10px;font-weight:bold;white-space:nowrap;'
                         f'border:1px solid #8e44ad" title="{_label}">🎩 H-Change</span>'
                     )
+                    _horse_change_alerts.append({'type': 'hood_change',
+                                                 'from': _prev_hood or 'none',
+                                                 'to':   _today_hood or 'none'})
                 headgear_change_html = ' '.join(_hg_alerts)
 
         trainer_change_html = ''
@@ -3001,6 +3025,9 @@ def _render_runners_html(race_rows, runners_hist,
                             + (f'<span style="color:{_pp_col};font-size:9px">{_pp_str}</span>' if _pp_str else '')
                             + '</span>'
                         )
+                        _horse_change_alerts.append({'type': 'trainer_change',
+                                                     'from': _prev_trainer, 'to': _today_trainer,
+                                                     'prev_trainer_pp365': _old_pp})
 
                 # ── Owner change ──────────────────────────────────────────────
                 if 'ownerName' in _t_hist.columns:
@@ -3021,6 +3048,9 @@ def _render_runners_html(race_rows, runners_hist,
                             + (f'<span style="color:{_opp_col};font-size:9px">{_opp_str}</span>' if _opp_str else '')
                             + '</span>'
                         )
+                        _horse_change_alerts.append({'type': 'owner_change',
+                                                     'from': _prev_owner, 'to': _today_owner,
+                                                     'prev_owner_pp365': _old_opp})
 
         days_since = horse_last_start.get(hid, None)
         daysince_html = ''
@@ -3146,25 +3176,93 @@ def _render_runners_html(race_rows, runners_hist,
                           all_pp=all_pp365_sire)
             + '</div>'
 
-            + (
-                '<div style="margin-top:8px;padding:7px 12px;'
-                'background:#f5f7ff;border-left:3px solid #5b8dd9;'
-                'border-radius:0 4px 4px 0;font-size:12px;color:#333;'
-                'line-height:1.55;font-family:\'Helvetica Neue\',Arial,sans-serif">'
-                '<span style="font-size:9px;font-weight:bold;color:#5b8dd9;'
-                'text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:3px">'
-                'AI Verdict</span>'
-                + str(horse_verdicts.get(horse, ''))
-                + '</div>'
-                if (horse_verdicts and horse_verdicts.get(horse))
-                else ''
-            )
+            + '<!--VERDICT_START:' + _re_safe.sub(r'[^A-Za-z0-9]', '_', str(horse)) + '--><!--VERDICT_END:' + _re_safe.sub(r'[^A-Za-z0-9]', '_', str(horse)) + '-->'
             + '</div>'
             + '</div>'
         )
+
+        # ── Collect JSON data (same computed vars, zero extra computation) ─────
+        _ctx = horse_form_context.get(hid, [])
+        _dp  = draw_pos_perc.get(str(draw_unique_val)) if draw_unique_val is not None else None
+        def _st_dict(st):
+            r2 = st.get('runs', 0)
+            return {
+                'runs':          r2,
+                'wins':          st.get('wins', 0),
+                'places':        st.get('places', 0),
+                'win_pct':       round(100 * st['wins']   / r2, 1) if r2 else 0,
+                'place_pct':     round(100 * st['places'] / r2, 1) if r2 else 0,
+                'ae_place':      st.get('ae_place'),
+                'prize_per_run': st.get('prizemoney'),
+            }
+        _race_json_horses.append({
+            'name':                 horse,
+            'draw':                 draw,
+            'draw_bias':            ({'bias': _dp[0], 'n': _dp[1]} if _dp else None),
+            'age':                  (int(float(r['age'])) if 'age' in r.index and pd.notna(r.get('age')) else None),
+            'sex':                  (sex if sex != '—' else None),
+            'weight_kg':            (float(wt_raw) if wt_raw is not None and pd.notna(wt_raw) else None),
+            'val':                  adj_val_float,
+            'rtr':                  rtr_adj_float,
+            'days_since_last_run':  horse_last_start.get(hid),
+            'going_category_today': horse_going_grp,
+            'distance_group_today': horse_dist_grp,
+            'sp_tip':               (float(sp) if sp is not None and pd.notna(sp) else None),
+            'blinkers':             (blink  if blink  not in ('', '—') else None),
+            'hood':                 (hood_v if hood_v not in ('', '—') else None),
+            'change_alerts':        _horse_change_alerts,
+            'horse_stats':          _st_dict(h_st),
+            'condition_panel':      horse_condition_stats.get(hid, {}),
+            'trainer': {'name': trainer if trainer != '—' else '',
+                        'pp365': avg_pp_365_trainer.get(trainer if trainer != '—' else '', None),
+                        **_st_dict(t_st)},
+            'jockey':  {'name': jockey  if jockey  != '—' else '',
+                        'pp365': avg_pp_365_jockey.get(jockey if jockey != '—' else '', None),
+                        **_st_dict(j_st)},
+            'sire':    {'name': sire    if sire    != '—' else '',
+                        'pp365': avg_pp_365_sire.get(sire if sire != '—' else '', None),
+                        **_st_dict(s_st)},
+            'recent_form': [
+                {
+                    'date':           e['date_str'],
+                    'going_cat':      e.get('going_cat_raw', ''),
+                    'dist_grp':       e.get('dist_grp_raw', ''),
+                    'dist_m':         e.get('dist_m_raw'),
+                    'pos':            e.get('ranking'),
+                    'field':          e.get('runners'),
+                    'lengths_beaten': e.get('lengths'),
+                    'sp':             e.get('liveOdd'),
+                    'arr':            e.get('arr_raw'),
+                    'val':            e.get('val_raw'),
+                    'jockey':         e.get('jockey_name', ''),
+                    'notepad':        bool(notepad_flags and e.get('race_id') is not None
+                                          and notepad_flags.get((str(e['race_id']), hid), False)),
+                    'opp':            [{'name': n, 'adj': a} for n, a in e.get('opp', [])],
+                    'opp2':           [{'b_name': o2['b_name'], 'x_name': o2['x_name'],
+                                        'score': o2['score']}
+                                       for o2 in (e.get('opp2') or [])],
+                }
+                for e in _ctx
+            ],
+        })
+
         cards_html.append(card)
 
-    return (
+    _first_row = rows.iloc[0]
+    _race_json = {
+        'meeting':        _s(_first_row, 'name_meeting'),
+        'race':           _s(_first_row, 'name_race'),
+        'going':          (_s(_first_row, 'going') if 'going' in rows.columns else ''),
+        'going_category': today_going_grp or '',
+        'distance_m':     (float(_first_row['distance']) if 'distance' in rows.columns and pd.notna(_first_row.get('distance')) else None),
+        'distance_group': today_distance_grp or '',
+        'race_type':      today_racetype or '',
+        # total_prize_eur and race_class are added by export_all_races_html
+        'field_size':     len(rows),
+        'horses':         _race_json_horses,
+    }
+
+    _html_out = (
         '<div style="margin-bottom:14px;">'
         '<div style="font-size:11px;font-weight:bold;color:' + c_green + ';'
         'text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;'
@@ -3174,6 +3272,7 @@ def _render_runners_html(race_rows, runners_hist,
         + ''.join(cards_html)
         + '</div>'
     )
+    return _html_out, _race_json
 
 
 def update_all_races_html_odds(output_dir, today_date, pmu_odds_history):
@@ -3284,4 +3383,57 @@ def update_all_races_html_odds(output_dir, today_date, pmu_odds_history):
         updated.append(os.path.basename(fpath))
 
     print(f'✅ PMU odds updated in {len(updated)} files')
+    return updated
+
+
+def update_verdicts_in_html(output_dir, today_date, horse_verdicts):
+    """
+    Inject AI verdicts into <!--VERDICT_START:X-->...<!--VERDICT_END:X--> placeholders
+    in existing HTML files.  Analogous to update_all_races_html_odds for PMU odds.
+    Rewrites each file in-place; only touches the verdict sections.
+    """
+    import os, re, glob
+
+    date_str = today_date if isinstance(today_date, str) else today_date.strftime('%Y-%m-%d')
+
+    def _verdict_html(verdict_text):
+        return (
+            '<div style="margin-top:8px;padding:7px 12px;'
+            'background:#f5f7ff;border-left:3px solid #5b8dd9;'
+            'border-radius:0 4px 4px 0;font-size:12px;color:#333;'
+            'line-height:1.55;font-family:\'Helvetica Neue\',Arial,sans-serif">'
+            '<span style="font-size:9px;font-weight:bold;color:#5b8dd9;'
+            'text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:3px">'
+            'AI Verdict</span>'
+            + str(verdict_text)
+            + '</div>'
+        )
+
+    # Build safe_id → verdict HTML mapping
+    _safe_id_to_verdict = {}
+    for horse_name, verdict_text in (horse_verdicts or {}).items():
+        sid = re.sub(r'[^A-Za-z0-9]', '_', str(horse_name))
+        _safe_id_to_verdict[sid] = verdict_text
+
+    _VERDICT_RE = re.compile(
+        r'<!--VERDICT_START:([^-]+)-->.*?<!--VERDICT_END:\1-->', re.DOTALL
+    )
+
+    def _replace_verdict(m):
+        sid   = m.group(1)
+        vtext = _safe_id_to_verdict.get(sid)
+        inner = _verdict_html(vtext) if vtext else ''
+        return f'<!--VERDICT_START:{sid}-->{inner}<!--VERDICT_END:{sid}-->'
+
+    updated = []
+    for fpath in sorted(glob.glob(os.path.join(output_dir, f'{date_str}__*.html'))):
+        with open(fpath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        new_content = _VERDICT_RE.sub(_replace_verdict, content)
+        if new_content != content:
+            with open(fpath, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            updated.append(os.path.basename(fpath))
+
+    print(f'✅ AI verdicts injected into {len(updated)} files')
     return updated
