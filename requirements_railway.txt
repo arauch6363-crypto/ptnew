@@ -1,0 +1,24 @@
+# PT HTML Fast — Railway dependencies
+# Install with: pip install -r requirements_railway.txt
+
+# Google Drive API
+google-auth>=2.0
+google-auth-httplib2>=0.2
+google-api-python-client>=2.0
+
+# Data
+numpy>=1.24
+pandas>=2.0
+pyarrow>=14.0          # parquet read/write
+scipy>=1.11
+
+# HTTP / odds fetch
+requests>=2.31
+pytz>=2024.1
+
+# HTML rendering (pt_html_functions.py)
+tqdm>=4.66
+
+# Claude API (compute_notepad_flags — called by PT_Vorarbeiten, not here,
+# but pt_html_functions.py imports it lazily so it must be installed)
+anthropic>=0.25

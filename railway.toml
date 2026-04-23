@@ -1,0 +1,15 @@
+# Railway configuration for PT HTML Fast cron job
+# Docs: https://docs.railway.app/reference/config-as-code
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+# Runs once at startup — Railway also uses this as the cron command
+startCommand = "pip install -r requirements_railway.txt && python scripts/html_fast.py"
+
+# Cron schedule (UTC):
+#   10:00 Berlin CEST (summer, UTC+2) = 08:00 UTC  →  "0 8 * * *"
+#   10:00 Berlin CET  (winter, UTC+1) = 09:00 UTC  →  "0 9 * * *"
+# Using 08:00 UTC year-round (1 hour early in winter — adjust if needed).
+cronSchedule = "0 8 * * *"
