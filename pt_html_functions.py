@@ -1891,9 +1891,11 @@ def _render_runners_html(race_rows, runners_hist,
         )
 
     def _odds_strip_html(horse_name):
+        import re as _re2
+        safe_id = _re2.sub(r'[^A-Za-z0-9]', '_', str(horse_name))
         points = horse_odds_strip.get(str(horse_name), [])
         if not points:
-            return ''
+            return f'<!--PMU_START:{safe_id}--><!--PMU_END:{safe_id}-->'
         chips = []
         prev_odds = None
         for ts, odds_val in points:
@@ -1917,15 +1919,16 @@ def _render_runners_html(race_rows, runners_hist,
             )
             prev_odds = odds_f
         if not chips:
-            return ''
+            return f'<!--PMU_START:{safe_id}--><!--PMU_END:{safe_id}-->'
         joined = '<span style="color:#d0d4dc;font-size:9px;margin:0 2px">›</span>'.join(chips)
-        return (
+        inner = (
             f'<span style="display:inline-flex;align-items:center;gap:2px;'
             f'background:#f8f9fc;border:1px solid #e0e4ec;border-radius:8px;'
             f'padding:1px 7px;margin-left:4px">'
             f'<span style="font-size:9px;color:#aaa;margin-right:3px">PMU</span>'
             f'{joined}</span>'
         )
+        return f'<!--PMU_START:{safe_id}-->{inner}<!--PMU_END:{safe_id}-->'
 
     def _badges_html(st, cat='horse'):
         if not st:
@@ -2889,3 +2892,114 @@ def _render_runners_html(race_rows, runners_hist,
         + ''.join(cards_html)
         + '</div>'
     )
+
+
+def update_all_races_html_odds(output_dir, today_date, pmu_odds_history):
+    """
+    Fast odds-only update: reads existing HTML files produced by export_all_races_html,
+    replaces only the <!--PMU_START:X-->...<!--PMU_END:X--> sections with fresh odds,
+    and rewrites each file in-place.  Typically runs in seconds.
+    """
+    import os, re, glob
+
+    date_str = today_date if isinstance(today_date, str) else today_date.strftime('%Y-%m-%d')
+
+    # ── build horse_odds_strip (same logic as in _render_runners_html) ───────
+    horse_odds_strip = {}
+    if pmu_odds_history is not None and 'horseName' in pmu_odds_history.columns:
+        _oh = pmu_odds_history.copy()
+        _oh['_ts'] = pd.to_datetime(_oh['timestamp'], errors='coerce')
+        _oh = _oh.dropna(subset=['_ts', 'odds', 'horseName'])
+        _oh = _oh.sort_values('_ts', ascending=True)
+
+        for _hname, _grp in _oh.groupby('horseName'):
+            _odds_series = _grp['odds'].tolist()
+            _ts_series   = _grp['_ts'].tolist()
+            if not _odds_series:
+                continue
+            _deduped_idx = [0]
+            for _i in range(1, len(_odds_series) - 1):
+                if _odds_series[_i] != _odds_series[_i - 1]:
+                    _deduped_idx.append(_i)
+            if len(_odds_series) > 1:
+                _deduped_idx.append(len(_odds_series) - 1)
+            _deduped_idx  = sorted(set(_deduped_idx))
+            _deduped_odds = [_odds_series[i] for i in _deduped_idx]
+            _deduped_ts   = [_ts_series[i]   for i in _deduped_idx]
+            if len(_deduped_odds) <= 5:
+                _picked = list(range(len(_deduped_odds)))
+            else:
+                _interior_idx = list(range(1, len(_deduped_odds) - 1))
+                _q = np.quantile(_interior_idx, [0.25, 0.5, 0.75])
+                _q_positions  = sorted(set(int(round(q)) for q in _q))
+                _picked = sorted(set([0] + _q_positions + [len(_deduped_odds) - 1]))
+            horse_odds_strip[str(_hname)] = [
+                (_deduped_ts[i], _deduped_odds[i]) for i in _picked
+            ]
+
+    # ── build the odds strip HTML for a single horse ─────────────────────────
+    def _make_strip(horse_name):
+        points = horse_odds_strip.get(str(horse_name), [])
+        if not points:
+            return ''
+        chips = []
+        prev_odds = None
+        for ts, odds_val in points:
+            try:
+                odds_f = float(odds_val)
+            except (TypeError, ValueError):
+                continue
+            if prev_odds is None:
+                col, arrow = '#888', ''
+            elif odds_f < prev_odds:
+                col, arrow = '#1a7a3a', '▼'
+            elif odds_f > prev_odds:
+                col, arrow = '#c0392b', '▲'
+            else:
+                col, arrow = '#888', ''
+            ts_str     = ts.strftime('%H:%M') if hasattr(ts, 'strftime') else str(ts)
+            arrow_span = f'<span style="font-size:8px">{arrow}</span>' if arrow else ''
+            chips.append(
+                f'<span title="{ts_str}" style="white-space:nowrap;color:{col};font-size:10px">'
+                f'{arrow_span}<strong style="color:{col}">{odds_f:.1f}</strong></span>'
+            )
+            prev_odds = odds_f
+        if not chips:
+            return ''
+        joined = '<span style="color:#d0d4dc;font-size:9px;margin:0 2px">›</span>'.join(chips)
+        return (
+            f'<span style="display:inline-flex;align-items:center;gap:2px;'
+            f'background:#f8f9fc;border:1px solid #e0e4ec;border-radius:8px;'
+            f'padding:1px 7px;margin-left:4px">'
+            f'<span style="font-size:9px;color:#aaa;margin-right:3px">PMU</span>'
+            f'{joined}</span>'
+        )
+
+    # ── reverse-map safe_id → horse name ─────────────────────────────────────
+    _safe_id_to_name = {re.sub(r'[^A-Za-z0-9]', '_', k): k for k in horse_odds_strip}
+
+    def _replace_placeholder(m):
+        safe_id    = m.group(1)
+        horse_name = _safe_id_to_name.get(safe_id, safe_id)
+        inner      = _make_strip(horse_name)
+        return f'<!--PMU_START:{safe_id}-->{inner}<!--PMU_END:{safe_id}-->'
+
+    _PMU_RE = re.compile(r'<!--PMU_START:([^-]+)-->.*?<!--PMU_END:\1-->', re.DOTALL)
+
+    html_files = sorted(glob.glob(os.path.join(output_dir, f'{date_str}__*.html')))
+    if not html_files:
+        print(f'⚠  No HTML files found for {date_str} in {output_dir}')
+        return []
+
+    updated = []
+    for fpath in html_files:
+        with open(fpath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        new_content = _PMU_RE.sub(_replace_placeholder, content)
+        if new_content != content:
+            with open(fpath, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+        updated.append(os.path.basename(fpath))
+
+    print(f'✅ PMU odds updated in {len(updated)} files')
+    return updated
