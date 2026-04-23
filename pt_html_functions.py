@@ -706,8 +706,12 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
     race_ids   = list(race_horse_map.keys())
     batches    = [race_ids[i:i+BATCH_SIZE] for i in range(0, len(race_ids), BATCH_SIZE)]
 
-    from google.colab import userdata
-    client = anthropic.Anthropic(api_key=userdata.get('ANTHROPIC_API_KEY'))   # picks up ANTHROPIC_API_KEY from env
+    import os as _os
+    _api_key = _os.environ.get('ANTHROPIC_API_KEY')
+    if not _api_key:
+        from google.colab import userdata
+        _api_key = userdata.get('ANTHROPIC_API_KEY')
+    client = anthropic.Anthropic(api_key=_api_key)
 
     total_flagged = 0
 
