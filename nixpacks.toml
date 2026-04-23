@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["python311"]
+
+[phases.install]
+cmds = ["pip install -r requirements_railway.txt"]
+
+[start]
+cmd = "python scripts/html_fast.py"
