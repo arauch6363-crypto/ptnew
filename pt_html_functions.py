@@ -1165,8 +1165,13 @@ def export_all_races_html(df_hist, df_today,
 # Verdict helpers: JSON builder + Claude API call
 # ─────────────────────────────────────────────────────────────────────────────
 
-def build_race_json(race_rows, df_hist, today_tips=None, races_tdy=None):
-    """Return a structured dict for one race suitable as Claude input."""
+def build_race_json(race_rows, df_hist, today_tips=None, races_tdy=None, notepad_flags=None):
+    """Return a structured dict for one race suitable as Claude input.
+
+    notepad_flags: {(race_id_str, horse_id_str): True} from compute_notepad_flags().
+    Stats match what the HTML displays: place-based A/E with odds_sum filter,
+    win/place boolean columns, median prizemoney for sires.
+    """
     import datetime as _dt2
 
     if race_rows.empty:
@@ -1184,12 +1189,14 @@ def build_race_json(race_rows, df_hist, today_tips=None, races_tdy=None):
         except Exception:
             return None
 
-    first = race_rows.iloc[0]
+    # ── Race-level metadata ────────────────────────────────────────────────────
+    first     = race_rows.iloc[0]
     meeting   = _sv(first, 'name_meeting')
     race_name = _sv(first, 'name_race')
     going     = _sv(first, 'going')
     going_cat = _sv(first, 'going_category')
     distance  = _nv(first, 'distance')
+    dist_grp  = _sv(first, 'distance_group')
     race_type = _sv(first, 'type') or _sv(first, 'raceType')
 
     total_prize = None
@@ -1212,38 +1219,102 @@ def build_race_json(race_rows, df_hist, today_tips=None, races_tdy=None):
                         race_class = str(cv.iloc[0]).strip()
                         break
 
-    # SP tips lookup
+    # ── SP tips ────────────────────────────────────────────────────────────────
     sp_lookup = {}
     if today_tips is not None and 'horse' in today_tips.columns:
         for _, tr in today_tips.iterrows():
             sp_lookup[str(tr['horse'])] = tr.get('SP')
 
-    # Precompute entity stats (avoid repeated full-scan per horse)
-    def _estats(df_sub):
+    # ── Prepare history (strip today — match HTML cutoff) ─────────────────────
+    today_str = str(_dt2.date.today())
+    cutoff_365 = pd.Timestamp(_dt2.date.today() - _dt2.timedelta(days=365))
+    ODD_MIN, ODD_MAX = 1.1, 1.4   # match HTML _filter() odds_sum range
+
+    h_all = df_hist.copy() if df_hist is not None and not df_hist.empty else pd.DataFrame()
+    if not h_all.empty and 'date' in h_all.columns:
+        h_all['_bdt'] = pd.to_datetime(h_all['date'], errors='coerce')
+        h_all = h_all[h_all['_bdt'] < today_str].copy()
+
+    # ── Entity stat helpers — match HTML computation exactly ──────────────────
+
+    def _entity_stats(df_sub):
+        """R/W/P (no odds filter) + ae_place (with odds_sum filter) — matches HTML."""
         if df_sub is None or df_sub.empty:
             return {}
         runs = len(df_sub)
-        wins = int((df_sub['ranking'] == 1).sum()) if 'ranking' in df_sub.columns else 0
-        plcs = int((df_sub['ranking'] <= 3).sum()) if 'ranking' in df_sub.columns else 0
-        ae = None
-        if 'liveOdd' in df_sub.columns and 'ranking' in df_sub.columns:
-            odds_s = pd.to_numeric(df_sub['liveOdd'], errors='coerce').dropna().clip(lower=1.01)
-            exp = (1 / odds_s).sum()
-            if exp > 0:
-                ae = round(wins / exp, 2)
-        prize = None
-        for pc in ('totalPrize', 'raceTotalPrize', 'prize'):
-            if pc in df_sub.columns:
-                pv = pd.to_numeric(df_sub[pc], errors='coerce').dropna()
-                if not pv.empty:
-                    prize = round(float(pv.mean()))
-                    break
+        # Use boolean win/place columns when available (created by PT_Vorarbeiten)
+        if 'win' in df_sub.columns:
+            wins   = int(df_sub['win'].sum())
+            places = int(df_sub['place'].sum()) if 'place' in df_sub.columns else wins
+        else:
+            wins   = int((pd.to_numeric(df_sub.get('ranking', pd.Series()), errors='coerce') == 1).sum())
+            places = int((pd.to_numeric(df_sub.get('ranking', pd.Series()), errors='coerce') <= 3).sum())
+        prizemoney = None
+        if 'prizemoney' in df_sub.columns:
+            pm = pd.to_numeric(df_sub['prizemoney'], errors='coerce').dropna()
+            if not pm.empty:
+                prizemoney = round(float(pm.mean()))
+        # A/E — place-based with odds filter (matches HTML _compute_ae_stats / ae_place)
+        ae_place = None
+        if all(c in df_sub.columns for c in ('liveOdd', 'odds_sum', 'odds_place', 'place')):
+            f = df_sub[
+                df_sub['liveOdd'].notnull() &
+                pd.to_numeric(df_sub['odds_sum'], errors='coerce').between(ODD_MIN, ODD_MAX)
+            ]
+            if not f.empty:
+                denom = pd.to_numeric(f['odds_place'], errors='coerce').sum()
+                p_f   = int(f['place'].sum())
+                ae_place = round(p_f / denom, 2) if denom > 0 else None
         return {
-            'runs': runs, 'wins': wins, 'places': plcs,
-            'win_pct': round(100 * wins / runs, 1) if runs else 0,
-            'place_pct': round(100 * plcs / runs, 1) if runs else 0,
-            'ae': ae, 'prize_per_run': prize,
+            'runs': runs, 'wins': wins, 'places': places,
+            'win_pct':   round(100 * wins   / runs, 1) if runs else 0,
+            'place_pct': round(100 * places / runs, 1) if runs else 0,
+            'ae_place': ae_place,
+            'prize_per_run': prizemoney,
         }
+
+    def _entity_stats_sire(df_sub):
+        """Same as _entity_stats but uses median prizemoney — matches HTML sire column."""
+        out = _entity_stats(df_sub)
+        if df_sub is not None and not df_sub.empty and 'prizemoney' in df_sub.columns:
+            pm = pd.to_numeric(df_sub['prizemoney'], errors='coerce').dropna()
+            if not pm.empty:
+                out['prize_per_run'] = round(float(pm.median()))
+        return out
+
+    def _pp365(df_sub):
+        """Average pos_perc last 365 days — matches HTML pp365 badge."""
+        if df_sub is None or df_sub.empty or 'pos_perc' not in df_sub.columns:
+            return None
+        h = df_sub
+        if '_bdt' in h.columns:
+            h = h[h['_bdt'] >= cutoff_365]
+        elif 'date' in h.columns:
+            h = h[pd.to_datetime(h['date'], errors='coerce') >= cutoff_365]
+        h = h.dropna(subset=['pos_perc'])
+        return round(float(h['pos_perc'].mean()), 3) if not h.empty else None
+
+    # ── Draw bias index — matches HTML draw_pos_perc ──────────────────────────
+    draw_pos_perc = {}
+    if not h_all.empty and 'draw_unique' in h_all.columns and 'pos_perc' in h_all.columns:
+        try:
+            _dh = h_all.dropna(subset=['pos_perc', 'draw_unique'])
+            for du, grp in _dh.groupby('draw_unique'):
+                draw_pos_perc[str(du)] = (round(float(grp['pos_perc'].mean()) - 0.5, 3), len(grp))
+        except Exception:
+            pass
+
+    # ── Today's starters index (for opp computation in form table) ────────────
+    today_hid_to_name = {}
+    if 'horseId' in race_rows.columns and 'horseName' in race_rows.columns:
+        for _, r2 in race_rows.iterrows():
+            hid2 = r2.get('horseId')
+            hn2  = r2.get('horseName')
+            if pd.notna(hid2) and pd.notna(hn2):
+                try:
+                    today_hid_to_name[str(int(hid2))] = str(hn2)
+                except Exception:
+                    pass
 
     horses_out = []
     today_ = _dt2.date.today()
@@ -1251,9 +1322,13 @@ def build_race_json(race_rows, df_hist, today_tips=None, races_tdy=None):
     for _, r in race_rows.iterrows():
         hname   = _sv(r, 'horseName')
         hid_raw = r.get('horseId', None)
+        hid_str = (str(int(hid_raw)) if (hid_raw is not None and pd.notna(hid_raw)) else '')
         trainer = _sv(r, 'trainerName')
         jockey  = _sv(r, 'jockeyName')
         sire    = _sv(r, 'horseSir')
+        owner   = _sv(r, 'ownerName')
+        blink   = _sv(r, 'blinkers')
+        hood    = _sv(r, 'hood')
 
         hcap = _nv(r, 'handicapRatingKg')
         wt   = _nv(r, 'weightKg')
@@ -1261,11 +1336,16 @@ def build_race_json(race_rows, df_hist, today_tips=None, races_tdy=None):
         val_ = round(hcap - wt + 55, 1) if (hcap is not None and wt is not None) else None
         rtr_ = round(rtar - wt + 55, 1) if (rtar is not None and wt is not None) else None
 
+        draw_raw = _sv(r, 'draw_unique') or _sv(r, 'draw')
+
         # Entity history slices
-        h_sub = df_hist[df_hist['horseId'] == hid_raw].copy() if (hid_raw is not None and 'horseId' in df_hist.columns) else pd.DataFrame()
-        t_sub = df_hist[df_hist['trainerName'] == trainer] if trainer else pd.DataFrame()
-        j_sub = df_hist[df_hist['jockeyName']  == jockey]  if jockey  else pd.DataFrame()
-        s_sub = df_hist[df_hist['horseSir']     == sire]    if sire    else pd.DataFrame()
+        if not h_all.empty:
+            h_sub = h_all[h_all['horseId'] == hid_raw].copy() if (hid_raw is not None and 'horseId' in h_all.columns) else pd.DataFrame()
+            t_sub = h_all[h_all['trainerName'] == trainer].copy() if trainer else pd.DataFrame()
+            j_sub = h_all[h_all['jockeyName']  == jockey ].copy() if jockey  else pd.DataFrame()
+            s_sub = h_all[h_all['horseSir']     == sire   ].copy() if sire    else pd.DataFrame()
+        else:
+            h_sub = t_sub = j_sub = s_sub = pd.DataFrame()
 
         # Days since last run
         days_since = None
@@ -1274,11 +1354,67 @@ def build_race_json(race_rows, df_hist, today_tips=None, races_tdy=None):
             if not last_dt.empty:
                 days_since = (today_ - last_dt.max().date()).days
 
-        # Recent form (last 5 races)
+        # Condition panel: R/W/P split by going_category and distance_group
+        cond_panel = {}
+        for cond_col, label in (('going_category', 'by_going'), ('distance_group', 'by_dist')):
+            if not h_sub.empty and cond_col in h_sub.columns and 'win' in h_sub.columns:
+                breakdown = {}
+                for val_key, grp2 in h_sub.groupby(cond_col):
+                    if pd.isna(val_key) or str(val_key).strip() in ('', 'nan'):
+                        continue
+                    r2 = len(grp2)
+                    w2 = int(grp2['win'].sum())
+                    p2 = int(grp2['place'].sum()) if 'place' in grp2.columns else 0
+                    breakdown[str(val_key)] = {
+                        'runs': r2, 'wins': w2, 'places': p2,
+                        'win_pct':   round(100 * w2 / r2, 1) if r2 else 0,
+                        'place_pct': round(100 * p2 / r2, 1) if r2 else 0,
+                    }
+                if breakdown:
+                    cond_panel[label] = breakdown
+
+        # Draw bias for today's stall
+        draw_bias = None
+        if draw_raw and str(draw_raw) not in ('', '—'):
+            dp = draw_pos_perc.get(str(draw_raw))
+            if dp is not None:
+                draw_bias = {'bias': dp[0], 'n': dp[1]}
+
+        # Change alerts vs last historical race (headgear, trainer, owner)
+        change_alerts = []
+        if not h_sub.empty and 'date' in h_sub.columns:
+            _sorted = h_sub.sort_values('date', ascending=False)
+            _last   = _sorted.iloc[0]
+            prev_blink = str(_last.get('blinkers', '')).strip() if pd.notna(_last.get('blinkers')) else ''
+            prev_hood  = str(_last.get('hood',     '')).strip() if pd.notna(_last.get('hood'))     else ''
+            prev_blink = '' if prev_blink in ('nan', '—') else prev_blink
+            prev_hood  = '' if prev_hood  in ('nan', '—') else prev_hood
+            today_blink = blink if blink not in ('—', '') else ''
+            today_hood  = hood  if hood  not in ('—', '') else ''
+            if today_blink != prev_blink:
+                change_alerts.append({'type': 'blinkers_change',
+                                      'from': prev_blink or 'none', 'to': today_blink or 'none'})
+            if today_hood != prev_hood:
+                change_alerts.append({'type': 'hood_change',
+                                      'from': prev_hood or 'none', 'to': today_hood or 'none'})
+            if 'trainerName' in _sorted.columns:
+                prev_trainer = str(_last.get('trainerName', '')).strip()
+                prev_trainer = '' if prev_trainer in ('nan', '—') else prev_trainer
+                if trainer and prev_trainer and trainer != prev_trainer:
+                    change_alerts.append({'type': 'trainer_change',
+                                          'from': prev_trainer, 'to': trainer})
+            if 'ownerName' in _sorted.columns:
+                prev_owner = str(_last.get('ownerName', '')).strip()
+                prev_owner = '' if prev_owner in ('nan', '—') else prev_owner
+                if owner and prev_owner and owner != prev_owner:
+                    change_alerts.append({'type': 'owner_change',
+                                          'from': prev_owner, 'to': owner})
+
+        # Recent form — last 5 races, oldest first, enriched to match form table rows
         recent_form = []
         if not h_sub.empty and 'date' in h_sub.columns:
             for _, fr in h_sub.sort_values('date').tail(5).iterrows():
-                pos = None
+                pos      = None
                 try: pos = int(fr['ranking'])
                 except Exception: pass
                 field_sz = None
@@ -1289,34 +1425,133 @@ def build_race_json(race_rows, df_hist, today_tips=None, races_tdy=None):
                     _sp = float(fr.get('liveOdd', float('nan')))
                     sp_f = round(_sp, 1) if not pd.isna(_sp) else None
                 except Exception: pass
+                arr_v = None
+                try:
+                    _arr = float(fr.get('ARR', float('nan')))
+                    arr_v = round(_arr, 1) if not pd.isna(_arr) else None
+                except Exception: pass
+                # ARR re-adjusted to today's carry weight (matches "adj_arr" form table column)
+                adj_arr_v = None
+                if arr_v is not None and wt is not None:
+                    try:
+                        _wt_h = float(fr.get('weightKg', float('nan')))
+                        if not pd.isna(_wt_h):
+                            adj_arr_v = round(arr_v - _wt_h + wt, 1)
+                    except Exception: pass
+                val_run = None
+                try:
+                    _hc2 = float(fr.get('handicapRatingKg', float('nan')))
+                    _wt2 = float(fr.get('weightKg', float('nan')))
+                    if not (pd.isna(_hc2) or pd.isna(_wt2)):
+                        val_run = round(_hc2 - _wt2 + 55, 1)
+                except Exception: pass
+                lengths = None
+                try:
+                    _lb = float(fr.get('cumulative_lengths_back', float('nan')))
+                    if not pd.isna(_lb):
+                        lengths = round(_lb, 1)
+                except Exception: pass
+                jcky_run = str(fr.get('jockeyName', '') or '').strip()
+                if jcky_run in ('nan', 'None', '—'): jcky_run = ''
+                # Notepad flag (📓 in HTML)
+                race_id_v   = fr.get('raceId', None)
+                race_id_str = str(race_id_v) if (race_id_v is not None and pd.notna(race_id_v)) else None
+                is_flagged  = bool(
+                    notepad_flags and race_id_str and
+                    notepad_flags.get((race_id_str, hid_str), False)
+                )
+                # Opp: today's starters who also ran in this historical race
+                opp_list = []
+                if (race_id_v is not None and pd.notna(race_id_v)
+                        and not h_all.empty and 'raceId' in h_all.columns):
+                    same_race = h_all[h_all['raceId'] == race_id_v]
+                    if 'horseId' in same_race.columns:
+                        for _oh, _oname in today_hid_to_name.items():
+                            if _oh == hid_str:
+                                continue
+                            try:
+                                _oid_int = int(_oh)
+                            except Exception:
+                                continue
+                            opp_rows = same_race[
+                                pd.to_numeric(same_race['horseId'], errors='coerce') == _oid_int
+                            ]
+                            if opp_rows.empty:
+                                continue
+                            opp_row = opp_rows.iloc[0]
+                            o_pos = None
+                            try: o_pos = int(opp_row['ranking'])
+                            except Exception: pass
+                            o_arr = None
+                            try:
+                                _oa = float(opp_row.get('ARR', float('nan')))
+                                o_arr = round(_oa, 1) if not pd.isna(_oa) else None
+                            except Exception: pass
+                            arr_diff = (round(arr_v - o_arr, 1)
+                                        if (arr_v is not None and o_arr is not None) else None)
+                            opp_list.append({
+                                'name': _oname,
+                                'their_pos': o_pos,
+                                'arr_diff': arr_diff,  # positive = this horse outperformed them on ARR
+                            })
+                        opp_list.sort(key=lambda x: abs(x['arr_diff'] or 0), reverse=True)
+
                 recent_form.append({
-                    'date': str(fr.get('date', ''))[:10],
-                    'pos': pos, 'field': field_sz, 'sp': sp_f,
-                    'going_cat': str(fr.get('going_category', '')),
-                    'dist_m': _nv(fr, 'distance'),
+                    'date':           str(fr.get('date', ''))[:10],
+                    'meeting':        str(fr.get('name_meeting') or fr.get('meetingName', '') or '')[:25],
+                    'going_cat':      str(fr.get('going_category', '')),
+                    'dist_m':         _nv(fr, 'distance'),
+                    'dist_grp':       str(fr.get('distance_group', '')),
+                    'race_class':     str(fr.get('class') or ''),
+                    'pos':            pos,
+                    'field':          field_sz,
+                    'lengths_beaten': lengths,
+                    'sp':             sp_f,
+                    'arr':            arr_v,
+                    'adj_arr':        adj_arr_v,   # ARR re-adjusted to today's weight
+                    'val':            val_run,
+                    'jockey':         jcky_run,
+                    'notepad':        is_flagged,  # Claude flagged unlucky/strong run
+                    'opp':            opp_list,    # today's starters in same race
                 })
 
         horses_out.append({
-            'name': hname,
-            'draw': _sv(r, 'draw') or _nv(r, 'draw'),
-            'age': _nv(r, 'age'), 'sex': _sv(r, 'sex'),
-            'weight_kg': wt, 'val': val_, 'rtr': rtr_,
-            'days_since_last_run': days_since,
-            'sp_tip': sp_lookup.get(hname),
-            'horse_stats': _estats(h_sub),
-            'trainer': {'name': trainer, **_estats(t_sub)},
-            'jockey': {'name': jockey,  **_estats(j_sub)},
-            'sire':   {'name': sire,    **_estats(s_sub)},
+            'name':                 hname,
+            'draw':                 _sv(r, 'draw') or _nv(r, 'draw'),
+            'draw_bias':            draw_bias,       # {bias, n}: avg pos_perc − 0.5 for this stall
+            'age':                  _nv(r, 'age'),
+            'sex':                  _sv(r, 'sex'),
+            'weight_kg':            wt,
+            'val':                  val_,            # handicap valuation adjusted for today's weight
+            'rtr':                  rtr_,            # last-run rating adjusted for today's weight
+            'days_since_last_run':  days_since,
+            'going_category_today': going_cat,
+            'distance_group_today': dist_grp,
+            'sp_tip':               sp_lookup.get(hname),
+            'blinkers':             (blink if blink not in ('', '—') else None),
+            'hood':                 (hood  if hood  not in ('', '—') else None),
+            'change_alerts':        change_alerts,   # headgear/trainer/owner changes vs last race
+            'horse_stats':          _entity_stats(h_sub),
+            'condition_panel':      cond_panel,      # R/W/P by going_category and distance_group
+            'trainer': {'name': trainer, 'pp365': _pp365(t_sub), **_entity_stats(t_sub)},
+            'jockey':  {'name': jockey,  'pp365': _pp365(j_sub), **_entity_stats(j_sub)},
+            'sire':    {'name': sire,    'pp365': _pp365(s_sub), **_entity_stats_sire(s_sub)},
             'recent_form': recent_form,
         })
 
     return {
-        'meeting': meeting, 'race': race_name,
-        'date': str(today_),
-        'going': going, 'going_category': going_cat,
-        'distance_m': distance, 'race_type': race_type,
-        'race_class': race_class, 'total_prize_eur': total_prize,
-        'field_size': len(horses_out), 'horses': horses_out,
+        'meeting':        meeting,
+        'race':           race_name,
+        'date':           str(today_),
+        'going':          going,
+        'going_category': going_cat,
+        'distance_m':     distance,
+        'distance_group': dist_grp,
+        'race_type':      race_type,
+        'race_class':     race_class,
+        'total_prize_eur': total_prize,
+        'field_size':     len(horses_out),
+        'horses':         horses_out,
     }
 
 
@@ -1333,8 +1568,21 @@ def generate_race_verdicts(race_json, api_key):
     horse_names = [h['name'] for h in race_json.get('horses', [])]
 
     user_msg = (
-        'Write a short Racing Post style verdict for each horse below.\n'
-        'Maximum 3–5 concise sentences per horse. Be direct and factual.\n\n'
+        'Write a Racing Post style verdict for each horse in this race.\n'
+        '3–5 concise sentences per horse. Be direct and factual.\n\n'
+        'Key fields to interpret (see system prompt for full reference):\n'
+        '  val / rtr         — handicap edge vs last-run form\n'
+        '  horse_stats ae_place — place A/E (>1.0 outperforms market)\n'
+        '  trainer/jockey ae_place + pp365 — handler quality signal\n'
+        '  condition_panel by_going/by_dist — going + distance record\n'
+        '  change_alerts     — headgear, trainer, owner changes\n'
+        '  draw_bias         — stall pos_perc bias (positive = favours front)\n'
+        '  recent_form[].notepad — 📓 unlucky/strong run flagged by AI\n'
+        '  recent_form[].adj_arr — ARR re-adjusted to today\'s weight (trend signal)\n'
+        '  recent_form[].opp — today\'s opponents met in the same past race:\n'
+        '      arr_diff > 0 = this horse outperformed them on ARR\n'
+        '      arr_diff < 0 = they outperformed this horse\n'
+        '      their_pos = where the opponent finished in that race\n\n'
         'Return ONLY a valid JSON object — no markdown, no extra text.\n'
         f'Keys must be exactly: {_json.dumps(horse_names)}\n\n'
         f'Race data:\n{_json.dumps(race_json, indent=2, default=str)}'
@@ -1342,7 +1590,7 @@ def generate_race_verdicts(race_json, api_key):
 
     resp = client.messages.create(
         model='claude-sonnet-4-6',
-        max_tokens=2048,
+        max_tokens=4096,
         system=VERDICT_SYSTEM_PROMPT,
         messages=[{'role': 'user', 'content': user_msg}],
     )
