@@ -2,16 +2,13 @@
 """
 PT HTML Fast — Railway runner
 
-Fetches live PMU odds and exports HTML race cards to Google Drive.
-Replaces PT_Create_HTMLs_fast.ipynb for automated / non-Colab execution.
+Downloads today's base HTML files from Drive (produced by PT_Vorarbeiten),
+fetches live PMU odds, updates only the <!--PMU_START/END--> placeholders,
+and re-uploads the files to Drive.
 
 Required environment variables:
     GITHUB_TOKEN         Read odds_{TODAY}.json from pmu-tracker repo
     GOOGLE_CREDENTIALS   Service account JSON (as a string) with Drive access
-
-Optional:
-    ANTHROPIC_API_KEY    Needed only if compute_notepad_flags is called here
-                         (it runs in PT_Vorarbeiten, not here)
 """
 
 import io
@@ -57,6 +54,12 @@ def _find(svc, name: str, parent_id: str) -> str | None:
     res = svc.files().list(q=q, fields='files(id)').execute()
     files = res.get('files', [])
     return files[0]['id'] if files else None
+
+
+def _list_files(svc, parent_id: str, prefix: str) -> list[dict]:
+    q = f"name contains '{prefix}' and '{parent_id}' in parents and trashed=false"
+    res = svc.files().list(q=q, fields='files(id,name)', pageSize=200).execute()
+    return res.get('files', [])
 
 
 def _download(svc, file_id: str, dest: Path) -> None:
@@ -181,102 +184,71 @@ def fetch_pmu_odds(runners_tdy: pd.DataFrame) -> pd.DataFrame:
 def main() -> None:
     print(f'PT HTML Fast  |  {TODAY}  |  Berlin {datetime.now(BERLIN).strftime("%H:%M")}')
 
-    svc    = _drive_service()
-    pt_id  = _find_folder(svc, DRIVE_FOLDER)
+    svc      = _drive_service()
+    pt_id    = _find_folder(svc, DRIVE_FOLDER)
     races_id = _get_or_create_folder(svc, 'races', pt_id)
     print(f'✓ Drive: {DRIVE_FOLDER}/ found')
 
     with tempfile.TemporaryDirectory() as _tmp:
-        tmp = Path(_tmp)
+        tmp     = Path(_tmp)
+        out_dir = tmp / 'races'
+        out_dir.mkdir()
 
-        # ── Download pre-computed files from Drive ──────────────────────────
-        needed = [
-            'runners_processed.parquet',
-            'df_with_ratings.parquet',
-            f'notepad_flags_{TODAY}.pkl',
-            f'precomputed_tdy_{TODAY}.pkl',
-        ]
-        print('Downloading from Drive...')
-        for fname in needed:
-            fid = _find(svc, fname, pt_id)
-            if not fid:
-                raise FileNotFoundError(
-                    f'{fname} not found in Drive. '
-                    'Run PT_Vorarbeiten first.'
-                )
-            _download(svc, fid, tmp / fname)
-            print(f'  ✓ {fname}')
+        # ── Download precomputed today data (for odds name-matching) ────────
+        pkl_name = f'precomputed_tdy_{TODAY}.pkl'
+        fid = _find(svc, pkl_name, pt_id)
+        if not fid:
+            raise FileNotFoundError(
+                f'{pkl_name} not found in Drive. Run PT_Vorarbeiten first.'
+            )
+        _download(svc, fid, tmp / pkl_name)
+        print(f'✓ {pkl_name}')
 
-        # ── Load DataFrames ─────────────────────────────────────────────────
-        runners         = pd.read_parquet(tmp / 'runners_processed.parquet')
-        df_with_ratings = pd.read_parquet(tmp / 'df_with_ratings.parquet')
-
-        with open(tmp / f'notepad_flags_{TODAY}.pkl', 'rb') as f:
-            notepad_flags = pickle.load(f)
-
-        with open(tmp / f'precomputed_tdy_{TODAY}.pkl', 'rb') as f:
+        with open(tmp / pkl_name, 'rb') as f:
             tdy = pickle.load(f)
-
         runners_tdy = tdy['runners_tdy']
-        webTips_tdy = tdy['webTips_tdy']
-        races_tdy   = tdy['races_tdy']
-        today_tips  = tdy['today_tips']
-
         print(
-            f'✓ {len(runners):,} hist runners | '
-            f'{len(runners_tdy)} today runners across '
+            f'✓ {len(runners_tdy)} today runners across '
             f'{runners_tdy["raceId"].nunique()} races'
         )
+
+        # ── Download today's base HTML files from Drive/PT/races/ ───────────
+        html_files = _list_files(svc, races_id, f'{TODAY}__')
+        if not html_files:
+            print(
+                f'⚠  No HTML files for {TODAY} found in Drive/PT/races/. '
+                'Run PT_Vorarbeiten first.'
+            )
+            return
+        print(f'Downloading {len(html_files)} HTML files...')
+        for f_meta in html_files:
+            _download(svc, f_meta['id'], out_dir / f_meta['name'])
+            print(f'  ✓ {f_meta["name"]}')
 
         # ── Fetch live PMU odds ─────────────────────────────────────────────
         print('Fetching PMU odds from GitHub...')
         pmu_odds_history = fetch_pmu_odds(runners_tdy)
         print(f'✓ {len(pmu_odds_history):,} odds rows')
 
-        # ── Filter to upcoming races (Berlin time) ──────────────────────────
-        now_str = datetime.now(BERLIN).strftime('%H:%M:%S')
-        races_tdy['time'] = races_tdy['time'].astype(str)
-        races_filt   = races_tdy[races_tdy['time'] > now_str].copy().reset_index(drop=True)
-        runners_filt = (
-            runners_tdy[runners_tdy['id_race'].isin(races_filt['id_race'])]
-            .copy()
-            .reset_index(drop=True)
-        )
-        print(f'✓ {len(races_filt)} upcoming races (after {now_str} Berlin)')
-
-        if races_filt.empty:
-            print('No upcoming races — nothing to export.')
-            return
-
-        # ── Load shared HTML module ─────────────────────────────────────────
+        # ── Update only the PMU odds sections in the HTML files ─────────────
         sys.path.insert(0, str(REPO_ROOT))
-        from pt_html_functions import export_all_races_html  # noqa: E402
+        from pt_html_functions import update_all_races_html_odds  # noqa: E402
 
-        # ── Export HTMLs ────────────────────────────────────────────────────
-        out_dir = tmp / 'races'
-        out_dir.mkdir()
-
-        exported = export_all_races_html(
-            df_hist          = runners,
-            df_today         = runners_filt,
-            webTips_tdy      = webTips_tdy,
-            today_tips       = today_tips,
-            races_tdy        = races_filt,
-            df_with_ratings  = df_with_ratings,
-            notepad_flags    = notepad_flags,
-            pmu_odds_history = pmu_odds_history,
+        updated = update_all_races_html_odds(
             output_dir       = str(out_dir),
+            today_date       = TODAY,
+            pmu_odds_history = pmu_odds_history,
         )
 
-        # ── Upload HTMLs to Drive ───────────────────────────────────────────
-        print(f'Uploading {len(exported)} HTML files to Drive...')
-        for fname in exported:
+        # ── Upload updated HTMLs back to Drive ──────────────────────────────
+        print(f'Uploading {len(updated)} HTML files to Drive...')
+        for fname in updated:
             local = out_dir / fname
             if local.exists():
                 _upload(svc, local, fname, races_id)
                 print(f'  ✓ {fname}')
 
-    print(f'Done — {len(exported)} race cards published to Drive/PT/races/')
+    print(f'Done — {len(updated)} race cards updated in Drive/PT/races/')
 
 
 if __name__ == '__main__':
