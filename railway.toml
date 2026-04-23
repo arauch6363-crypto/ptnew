@@ -3,11 +3,11 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "pip install -r requirements_railway.txt"
+buildCommand = "python3.11 -m pip install -r requirements_railway.txt"
 
 [deploy]
 # Runs once at startup — Railway also uses this as the cron command
-startCommand = "python scripts/html_fast.py"
+startCommand = "python3.11 scripts/html_fast.py"
 
 # Cron schedule (UTC):
 #   10:00 Berlin CEST (summer, UTC+2) = 08:00 UTC  →  "0 8 * * *"
