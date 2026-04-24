@@ -3364,7 +3364,14 @@ def _render_runners_html(race_rows, runners_hist,
                 'ae_place':      st.get('ae_place'),
                 'prize_per_run': st.get('prizemoney'),
             }
-        _saddle = _s(r, 'numPmu') if 'numPmu' in r.index else draw
+        if 'saddle' in r.index and pd.notna(r.get('saddle')):
+            _saddle_raw = r['saddle']
+            try:
+                _saddle = str(int(float(_saddle_raw)))
+            except (ValueError, TypeError):
+                _saddle = str(_saddle_raw)
+        else:
+            _saddle = None
         _race_json_horses.append({
             'name':                 horse,
             'saddle':               _saddle,
