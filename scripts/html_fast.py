@@ -232,7 +232,11 @@ def main() -> None:
 
         # ── Update only the PMU odds sections in the HTML files ─────────────
         sys.path.insert(0, str(REPO_ROOT))
-        from pt_html_functions import update_all_races_html_odds  # noqa: E402
+        from pt_html_functions import (  # noqa: E402
+            update_all_races_html_odds,
+            update_verdicts_in_html,
+            update_race_verdicts_in_html,
+        )
 
         updated = update_all_races_html_odds(
             output_dir       = str(out_dir),
@@ -240,13 +244,22 @@ def main() -> None:
             pmu_odds_history = pmu_odds_history,
         )
 
-        # ── Upload updated HTMLs back to Drive ──────────────────────────────
-        print(f'Uploading {len(updated)} HTML files to Drive...')
-        for fname in updated:
-            local = out_dir / fname
-            if local.exists():
-                _upload(svc, local, fname, races_id)
-                print(f'  ✓ {fname}')
+        # ── Re-inject verdicts (ensures consistency across runs) ────────────
+        all_verdicts      = tdy.get('all_verdicts', {})
+        all_race_verdicts = tdy.get('all_race_verdicts', {})
+        if all_verdicts:
+            update_verdicts_in_html(str(out_dir), TODAY, all_verdicts)
+            print(f'✓ Horse verdicts re-injected ({len(all_verdicts)} horses)')
+        if all_race_verdicts:
+            update_race_verdicts_in_html(str(out_dir), TODAY, all_race_verdicts)
+            print(f'✓ Race verdicts re-injected ({len(all_race_verdicts)} races)')
+
+        # ── Upload all HTMLs back to Drive (odds + verdicts may both have changed)
+        all_html = sorted(out_dir.glob(f'{TODAY}__*.html'))
+        print(f'Uploading {len(all_html)} HTML files to Drive...')
+        for local in all_html:
+            _upload(svc, local, local.name, races_id)
+            print(f'  ✓ {local.name}')
 
     print(f'Done — {len(updated)} race cards updated in Drive/PT/races/')
 
