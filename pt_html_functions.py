@@ -12,6 +12,10 @@ Usage
         compute_notepad_flags,
         export_all_races_html,
         _render_runners_html,   # internal, but importable if needed
+        generate_race_verdicts,
+        generate_race_verdict,
+        update_verdicts_in_html,
+        update_race_verdicts_in_html,
     )
 
 This file is the single source of truth for all rendering logic.
@@ -296,7 +300,78 @@ WRITING STYLE
   — Do not invent information absent from the data
   — Use racing vocabulary: "well handicapped", "consistent at the level",
     "stable switch", "step up in trip", "market springer", "hold-up horse",
-    "progressive profile", "flagged unlucky run", "strong form franked by FF", etc."""
+    "progressive profile", "flagged unlucky run", "strong form franked by FF", etc.
+
+LEARNING DATABASE
+  If a learnings_db list is included in the payload, apply its insights when analysing this race.
+  Each entry has: id, learning (generalised pattern), counter (times confirmed), direction
+  (POSITIVE / NEGATIVE / NEUTRAL), category (e.g. "trainer", "going", "draw", "form", "jockey").
+  — Weight entries with higher counter more heavily.
+  — POSITIVE direction = pattern correlates with winners/placers → look for it actively.
+  — NEGATIVE direction = pattern correlates with losers → treat as a red flag.
+  — Do not mention the learning database explicitly; weave insights naturally into verdicts."""
+
+
+RACE_VERDICT_SYSTEM_PROMPT = """You are an expert horse racing tipster writing race-level recommendations in the style of the Racing Post — authoritative, concise, and direct.
+
+Your task is to select ONE NAP (best bet, win only) and ONE EACH WAY selection for the race, with confidence scores.
+
+SELECTION CRITERIA
+==================
+
+NAP selection — consider in order:
+  1. Handicap edge: horse with highest val score and rising rtr trend
+  2. Consistent A/E > 1.0 for horse AND trainer/jockey combo
+  3. Going and distance affinity confirmed by condition panel (Win% >= 20% in today's bucket)
+  4. Positive preference chips (significant) for today's going, distance, and meeting
+  5. Hot trainer/jockey in good recent form (pp365 <= 0.42)
+  6. Positive FF in recent form (form franked by quality fields)
+  7. Rising ARR trend across last 3+ runs
+  8. Positive draw bias if field > 10
+  9. Notepad flags (unlucky run) that make recent results look worse than the actual performance
+  10. Opp/Opp2 form links that give an edge vs today's rivals
+
+EACH WAY selection — look for:
+  — A horse with genuine place claims even if win chance is limited
+  — Good place% (>= 30%) with consistent A/E place >= 1.0
+  — Proven ability at the conditions (going + distance chip both positive)
+  — Bigger price (SP > 5.0) that represents value each-way
+  — Avoid horses with poor going/distance records (Win% = 0% in today's bucket)
+  — The each-way can be the same as NAP if the horse is a clear standout at a decent price
+
+CONFIDENCE SCORING (1-10)
+  10: Multiple strong signals align — handicap edge + proven conditions + hot handler + rising form
+  8-9: 3-4 clear positive factors, no significant negatives
+  6-7: 2-3 positive factors, minor concerns (e.g. slight layoff, one bad draw)
+  4-5: Marginal edge, mixed signals, or small sample sizes
+  1-3: Speculative, lack of confirming data
+
+OUTPUT FORMAT — respond ONLY with valid JSON, no markdown, no extra text:
+{
+  "nap": {
+    "horse": "EXACT HORSE NAME",
+    "confidence": 7,
+    "reason": "One concise sentence explaining the key reason for selection."
+  },
+  "each_way": {
+    "horse": "EXACT HORSE NAME",
+    "confidence": 5,
+    "reason": "One concise sentence explaining why this horse has place claims."
+  }
+}
+
+WRITING STYLE
+  — Reason must be one sentence, max 20 words
+  — Use Racing Post vocabulary: "well handicapped", "proven at the trip", "booking upgrade",
+    "proven in the mud", "consistent at the level", "progressive profile"
+  — Be direct; no hedging phrases
+  — Horse names must match exactly the names in the race data
+
+LEARNING DATABASE
+  If a learnings_db list is included in the payload, apply its insights to guide selection.
+  Each entry: id, learning, counter, direction (POSITIVE/NEGATIVE/NEUTRAL), category.
+  Weight higher-counter entries more. POSITIVE = look for this pattern. NEGATIVE = red flag.
+  Do not mention the learning database in the output."""
 
 
 def _ensure_date_col(df):
@@ -1138,6 +1213,7 @@ def export_all_races_html(df_hist, df_today,
             filepath  = os.path.join(output_dir, filename)
             race_jsons[f'{today_str}__{safe_name}'] = _race_json
 
+            _rv_key = re.sub(r'[^A-Za-z0-9]', '_', f'{today_str}__{safe_name}')
             page_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1154,6 +1230,7 @@ def export_all_races_html(df_hist, df_today,
 <body>
 {header_html}
 {verdict_html}
+<!--RACE_VERDICT:{_rv_key}--><!--RACE_VERDICT_END:{_rv_key}-->
 {runners_html}
 </body>
 </html>"""
@@ -1171,7 +1248,7 @@ def export_all_races_html(df_hist, df_today,
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def generate_race_verdicts(race_json, api_key):
+def generate_race_verdicts(race_json, api_key, learnings_db=None):
     """
     Send one race JSON to Claude Sonnet and return {horse_name: verdict_text}.
     Raises on API errors so callers can catch per-race.
@@ -1183,25 +1260,29 @@ def generate_race_verdicts(race_json, api_key):
     client = _anthropic.Anthropic(api_key=api_key)
     horse_names = [h['name'] for h in race_json.get('horses', [])]
 
+    payload = dict(race_json)
+    if learnings_db:
+        payload['learnings_db'] = learnings_db
+
     user_msg = (
         'Write a Racing Post style verdict for each horse in this race.\n'
-        '3–5 concise sentences per horse. Be direct and factual.\n\n'
+        '3-5 concise sentences per horse. Be direct and factual.\n\n'
         'Key fields to interpret (see system prompt for full reference):\n'
-        '  val / rtr         — handicap edge vs last-run form\n'
-        '  horse_stats ae_place — place A/E (>1.0 outperforms market)\n'
-        '  trainer/jockey ae_place + pp365 — handler quality signal\n'
-        '  condition_panel by_going/by_dist — going + distance record\n'
-        '  change_alerts     — headgear, trainer, owner changes\n'
-        '  draw_bias         — stall pos_perc bias (positive = favours front)\n'
-        '  recent_form[].notepad — 📓 unlucky/strong run flagged by AI\n'
-        '  recent_form[].adj_arr — ARR re-adjusted to today\'s weight (trend signal)\n'
-        '  recent_form[].opp — today\'s opponents met in the same past race:\n'
+        '  val / rtr              -- handicap edge vs last-run form\n'
+        '  horse_stats ae_place   -- place A/E (>1.0 outperforms market)\n'
+        '  trainer/jockey ae_place + pp365 -- handler quality signal\n'
+        '  condition_panel by_going/by_dist -- going + distance record\n'
+        '  change_alerts          -- headgear, trainer, owner changes\n'
+        '  draw_bias              -- stall pos_perc bias (positive = favours front)\n'
+        '  recent_form[].notepad  -- unlucky/strong run flagged by AI\n'
+        '  recent_form[].arr      -- ARR trend signal (rising = improving)\n'
+        '  recent_form[].opp      -- today opponents met in same past race:\n'
         '      arr_diff > 0 = this horse outperformed them on ARR\n'
         '      arr_diff < 0 = they outperformed this horse\n'
-        '      their_pos = where the opponent finished in that race\n\n'
-        'Return ONLY a valid JSON object — no markdown, no extra text.\n'
+        '  recent_form[].opp2     -- indirect form links via common rivals\n\n'
+        'Return ONLY a valid JSON object -- no markdown, no extra text.\n'
         f'Keys must be exactly: {_json.dumps(horse_names)}\n\n'
-        f'Race data:\n{_json.dumps(race_json, indent=2, default=str)}'
+        f'Race data:\n{_json.dumps(payload, indent=2, default=str)}'
     )
 
     resp = client.messages.create(
@@ -1212,7 +1293,6 @@ def generate_race_verdicts(race_json, api_key):
     )
 
     text = resp.content[0].text.strip()
-    # Strip optional markdown code fence
     text = _re.sub(r'^```(?:json)?\s*', '', text)
     text = _re.sub(r'\s*```$', '', text)
     match = _re.search(r'\{[\s\S]*\}', text)
@@ -1222,6 +1302,95 @@ def generate_race_verdicts(race_json, api_key):
         except _json.JSONDecodeError:
             pass
     return {}
+
+
+def generate_race_verdict(race_json, api_key, learnings_db=None):
+    """
+    Send one race JSON to Claude and return a race-level NAP + Each Way recommendation.
+    Returns dict: {nap: {horse, confidence, reason}, each_way: {horse, confidence, reason}}
+    or {} on failure.
+    """
+    import anthropic as _anthropic
+    import json as _json
+    import re as _re
+
+    client = _anthropic.Anthropic(api_key=api_key)
+
+    payload = dict(race_json)
+    if learnings_db:
+        payload['learnings_db'] = learnings_db
+
+    horse_names = [h['name'] for h in race_json.get('horses', [])]
+    user_msg = (
+        f'Select one NAP and one EACH WAY horse for this race.\n'
+        f'Available horses: {_json.dumps(horse_names)}\n\n'
+        f'Race data:\n{_json.dumps(payload, indent=2, default=str)}'
+    )
+
+    resp = client.messages.create(
+        model='claude-sonnet-4-6',
+        max_tokens=512,
+        system=RACE_VERDICT_SYSTEM_PROMPT,
+        messages=[{'role': 'user', 'content': user_msg}],
+    )
+
+    text = resp.content[0].text.strip()
+    text = _re.sub(r'^```(?:json)?\s*', '', text)
+    text = _re.sub(r'\s*```$', '', text)
+    match = _re.search(r'\{[\s\S]*\}', text)
+    if match:
+        try:
+            result = _json.loads(match.group())
+            if 'nap' in result and 'each_way' in result:
+                return result
+        except _json.JSONDecodeError:
+            pass
+    return {}
+
+
+def _render_race_verdict_html(verdict):
+    """Render NAP/EW verdict dict as an HTML block for injection into race page HTML."""
+    if not verdict or 'nap' not in verdict:
+        return ''
+    nap = verdict.get('nap', {})
+    ew  = verdict.get('each_way', {})
+
+    def _badge(label, color):
+        return (
+            f'<span style="display:inline-block;padding:1px 7px;border-radius:10px;'
+            f'font-size:10px;font-weight:bold;background:{color};color:#fff;'
+            f'letter-spacing:.05em;margin-right:6px">{label}</span>'
+        )
+
+    def _row(label, color, data):
+        horse      = data.get('horse', '')
+        confidence = data.get('confidence', '')
+        reason     = data.get('reason', '')
+        conf_color = '#2d7d2d' if int(confidence or 0) >= 7 else ('#b8860b' if int(confidence or 0) >= 5 else '#c0392b')
+        return (
+            f'<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">'
+            f'{_badge(label, color)}'
+            f'<div>'
+            f'<span style="font-weight:bold;color:#1a1a2e;font-size:13px">{horse}</span>'
+            f'<span style="font-size:11px;color:{conf_color};margin-left:8px">'
+            f'(Confidence: {confidence}/10)</span>'
+            f'<div style="font-size:12px;color:#444;margin-top:2px">{reason}</div>'
+            f'</div>'
+            f'</div>'
+        )
+
+    html = (
+        '<div style="background:#fff8f0;border-left:4px solid #c0392b;'
+        'border-radius:0 6px 6px 0;padding:10px 16px;font-size:13px;'
+        'margin-bottom:10px;line-height:1.6;'
+        'font-family:\'Helvetica Neue\',Arial,sans-serif">'
+        '<div style="font-size:11px;font-weight:bold;color:#c0392b;'
+        'text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Race Verdict</div>'
+        + _row('NAP', '#c0392b', nap)
+        + _row('EW',  '#8e44ad', ew)
+        + '</div>'
+    )
+    return html
 
 
 def _render_runners_html(race_rows, runners_hist,
@@ -3195,8 +3364,10 @@ def _render_runners_html(race_rows, runners_hist,
                 'ae_place':      st.get('ae_place'),
                 'prize_per_run': st.get('prizemoney'),
             }
+        _saddle = _s(r, 'numPmu') if 'numPmu' in r.index else draw
         _race_json_horses.append({
             'name':                 horse,
+            'saddle':               _saddle,
             'draw':                 draw,
             'draw_bias':            ({'bias': _dp[0], 'n': _dp[1]} if _dp else None),
             'age':                  (int(float(r['age'])) if 'age' in r.index and pd.notna(r.get('age')) else None),
@@ -3249,7 +3420,9 @@ def _render_runners_html(race_rows, runners_hist,
         cards_html.append(card)
 
     _first_row = rows.iloc[0]
+    _race_id = (_first_row['raceId'] if 'raceId' in rows.columns and pd.notna(_first_row.get('raceId')) else None)
     _race_json = {
+        'raceId':         (str(int(_race_id)) if _race_id is not None else None),
         'meeting':        _s(_first_row, 'name_meeting'),
         'race':           _s(_first_row, 'name_race'),
         'going':          (_s(_first_row, 'going') if 'going' in rows.columns else ''),
@@ -3436,4 +3609,41 @@ def update_verdicts_in_html(output_dir, today_date, horse_verdicts):
             updated.append(os.path.basename(fpath))
 
     print(f'✅ AI verdicts injected into {len(updated)} files')
+    return updated
+
+
+def update_race_verdicts_in_html(output_dir, today_date, race_verdicts):
+    """
+    Inject race-level NAP/EW verdicts into <!--RACE_VERDICT:key-->...<!--RACE_VERDICT_END:key-->
+    placeholders in existing HTML files.  race_verdicts = {race_key: verdict_dict}.
+    """
+    import os, re, glob
+
+    date_str = today_date if isinstance(today_date, str) else today_date.strftime('%Y-%m-%d')
+
+    _key_to_html = {}
+    for race_key, verdict in (race_verdicts or {}).items():
+        sid = re.sub(r'[^A-Za-z0-9]', '_', str(race_key))
+        _key_to_html[sid] = _render_race_verdict_html(verdict)
+
+    _RV_RE = re.compile(
+        r'<!--RACE_VERDICT:([^-]+)-->.*?<!--RACE_VERDICT_END:\1-->', re.DOTALL
+    )
+
+    def _replace_rv(m):
+        sid  = m.group(1)
+        html = _key_to_html.get(sid, '')
+        return f'<!--RACE_VERDICT:{sid}-->{html}<!--RACE_VERDICT_END:{sid}-->'
+
+    updated = []
+    for fpath in sorted(glob.glob(os.path.join(output_dir, f'{date_str}__*.html'))):
+        with open(fpath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        new_content = _RV_RE.sub(_replace_rv, content)
+        if new_content != content:
+            with open(fpath, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            updated.append(os.path.basename(fpath))
+
+    print(f'✅ Race verdicts injected into {len(updated)} files')
     return updated
