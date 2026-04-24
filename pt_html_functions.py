@@ -747,6 +747,12 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
                 messages=[{'role': 'user', 'content': user_msg}],
             )
             raw = response.content[0].text.strip()
+            if response.stop_reason == 'max_tokens':
+                print(
+                    f'  ⚠️  TOKEN LIMIT: notepad batch {batch_idx+1} truncated '
+                    f'(max_tokens=4096, in={response.usage.input_tokens}, '
+                    f'out={response.usage.output_tokens}) — increase max_tokens or split batch'
+                )
 
             # strip accidental markdown fences
             if raw.startswith('```'):
@@ -1006,6 +1012,14 @@ def generate_race_verdicts(race_json, api_key, learnings_db=None):
         messages=[{'role': 'user', 'content': user_msg}],
     )
 
+    if resp.stop_reason == 'max_tokens':
+        _race_label = race_json.get('race', race_json.get('meeting', '?'))
+        print(
+            f'  ⚠️  TOKEN LIMIT: generate_race_verdicts "{_race_label}" truncated '
+            f'(max_tokens=4096, in={resp.usage.input_tokens}, '
+            f'out={resp.usage.output_tokens}) — increase max_tokens or reduce payload'
+        )
+
     text = resp.content[0].text.strip()
     text = _re.sub(r'^```(?:json)?\s*', '', text)
     text = _re.sub(r'\s*```$', '', text)
@@ -1047,6 +1061,14 @@ def generate_race_verdict(race_json, api_key, learnings_db=None):
         system=RACE_VERDICT_SYSTEM_PROMPT,
         messages=[{'role': 'user', 'content': user_msg}],
     )
+
+    if resp.stop_reason == 'max_tokens':
+        _race_label = race_json.get('race', race_json.get('meeting', '?'))
+        print(
+            f'  ⚠️  TOKEN LIMIT: generate_race_verdict "{_race_label}" truncated '
+            f'(max_tokens=512, in={resp.usage.input_tokens}, '
+            f'out={resp.usage.output_tokens}) — increase max_tokens'
+        )
 
     text = resp.content[0].text.strip()
     text = _re.sub(r'^```(?:json)?\s*', '', text)
