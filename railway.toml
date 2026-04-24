@@ -13,4 +13,4 @@ startCommand = "python scripts/html_fast.py"
 #   11:00 Berlin CET  (winter, UTC+1) = 10:00 UTC
 # Every 10 minutes from 09:00 UTC (= 11:00 Berlin CEST).
 # In winter the run starts 1 hour early (10:00 Berlin) — adjust to "*/10 10-22 * * *" then.
-cronSchedule = "*/10 9-22 * * *"
+# cronSchedule = "*/10 9-22 * * *"  # temporarily disabled
