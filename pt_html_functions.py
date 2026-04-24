@@ -39,8 +39,25 @@ from pathlib import Path
 
 
 def _load_prompt(filename: str) -> str:
-    """Load a system prompt from the prompts/ directory next to this file."""
-    return (Path(__file__).parent / 'prompts' / filename).read_text(encoding='utf-8')
+    """Load a system prompt — local prompts/ dir first, GitHub raw URL as fallback."""
+    local = Path(__file__).parent / 'prompts' / filename
+    if local.exists():
+        return local.read_text(encoding='utf-8')
+    # Fallback: fetch from GitHub (Colab / any env where prompts/ isn't next to this file)
+    import urllib.request as _urlreq
+    _token = os.environ.get('GITHUB_TOKEN', '')
+    _url   = f'https://raw.githubusercontent.com/arauch6363-crypto/ptnew/main/prompts/{filename}'
+    _req   = _urlreq.Request(_url, headers={'Authorization': f'token {_token}'} if _token else {})
+    try:
+        with _urlreq.urlopen(_req, timeout=15) as _r:
+            _text = _r.read().decode('utf-8')
+        print(f'[pt_html_functions] loaded {filename} from GitHub')
+        return _text
+    except Exception as _e:
+        raise FileNotFoundError(
+            f"Cannot load prompt '{filename}': not found at {local} and GitHub fetch failed ({_e}). "
+            f"Either place the prompts/ folder next to pt_html_functions.py or set GITHUB_TOKEN."
+        ) from _e
 
 # ── Third-party ───────────────────────────────────────────────────────────────
 import numpy as np
