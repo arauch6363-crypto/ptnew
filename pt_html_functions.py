@@ -1571,6 +1571,20 @@ def _render_runners_html(race_rows, runners_hist,
             + '</div>'
         )
 
+    def _build_prefs_data(entity_col, entity_val, hist_df, specs):
+        """Structured version of _build_prefs_html — returns list of dicts for JSON."""
+        if entity_val == '—' or not entity_val:
+            return []
+        result = []
+        for icon, label, subgroup_col, today_val in specs:
+            t, p, n = _ttest_pref(hist_df, entity_col, entity_val, subgroup_col, today_val)
+            if t is not None:
+                result.append({
+                    'icon': icon, 'label': label, 'condition': today_val,
+                    't': t, 'p': p, 'n': n, 'sig': (p is not None and p < 0.05),
+                })
+        return result
+
     def _today_val(col):
         if col in rows.columns:
             v = rows[col].dropna()
@@ -2861,6 +2875,33 @@ def _render_runners_html(race_rows, runners_hist,
         trainer_hc_html = _hot_cold_html(trainer if trainer != '—' else '', hot_cold_trainer)
         jockey_hc_html  = _hot_cold_html(jockey  if jockey  != '—' else '', hot_cold_jockey)
 
+        _horse_prefs_data = _build_prefs_data('horseId', hid, _hist_all,
+            [('📍', 'Meeting',  'name_meeting',   horse_meeting),
+             ('📏', 'Distance', 'distance_group', horse_dist_grp),
+             ('🌱', 'Going',    'going_category', horse_going_grp)])
+        _trainer_prefs_data = _build_prefs_data(
+            'trainerName', trainer if trainer != '—' else '', _hist_750,
+            [('🏇', 'Jockey',   'jockeyName',  today_jockey_for_trainer),
+             ('👤', 'Owner',    'ownerName',   today_owner_for_trainer),
+             ('📍', 'Meeting',  'name_meeting', horse_meeting),
+             ('🏆', 'RaceType', 'type',         horse_racetype)])
+        if not _trainer_prefs_data:
+            _trainer_prefs_data = _build_prefs_data(
+                'trainerName', trainer if trainer != '—' else '', _hist_750,
+                [('🏇', 'Jockey',   'jockeyName',  today_jockey_for_trainer),
+                 ('👤', 'Owner',    'ownerName',   today_owner_for_trainer),
+                 ('📍', 'Meeting',  'name_meeting', horse_meeting),
+                 ('🏆', 'RaceType', 'raceType',    horse_racetype)])
+        _jockey_prefs_data = _build_prefs_data(
+            'jockeyName', jockey if jockey != '—' else '', _hist_750,
+            [('🎩', 'Trainer', 'trainerName', today_trainer_for_jockey),
+             ('📍', 'Meeting', 'name_meeting', horse_meeting)])
+        _sire_prefs_data = _build_prefs_data(
+            'horseSir', sire if sire != '—' else '', _hist_all,
+            [('📏', 'Distance', 'distance_group', horse_dist_grp),
+             ('🌱', 'Going',    'going_category', horse_going_grp),
+             ('🎂', 'Age',      'age',            horse_age)])
+
         sp_html = ''
         if sp is not None and pd.notna(sp):
             sp_html = (
@@ -3143,16 +3184,22 @@ def _render_runners_html(race_rows, runners_hist,
             'hood':                 (hood_v if hood_v not in ('', '—') else None),
             'change_alerts':        _horse_change_alerts,
             'horse_stats':          _st_dict(h_st),
+            'prefs':                _horse_prefs_data,
             'condition_panel':      horse_condition_stats.get(hid, {}),
             'trainer': {'name': trainer if trainer != '—' else '',
                         'pp365': avg_pp_365_trainer.get(trainer if trainer != '—' else '', None),
-                        **_st_dict(t_st)},
+                        **_st_dict(t_st),
+                        'prefs':    _trainer_prefs_data,
+                        'hot_cold': hot_cold_trainer.get(trainer if trainer != '—' else '', None)},
             'jockey':  {'name': jockey  if jockey  != '—' else '',
                         'pp365': avg_pp_365_jockey.get(jockey if jockey != '—' else '', None),
-                        **_st_dict(j_st)},
+                        **_st_dict(j_st),
+                        'prefs':    _jockey_prefs_data,
+                        'hot_cold': hot_cold_jockey.get(jockey if jockey != '—' else '', None)},
             'sire':    {'name': sire    if sire    != '—' else '',
                         'pp365': avg_pp_365_sire.get(sire if sire != '—' else '', None),
-                        **_st_dict(s_st)},
+                        **_st_dict(s_st),
+                        'prefs':    _sire_prefs_data},
             'recent_form': [
                 {
                     'date':           e['date_str'],
