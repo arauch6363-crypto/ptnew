@@ -113,8 +113,6 @@ LINE_COLOURS = [
 _date_cache = {}
 
 # ── System prompts — loaded from prompts/ directory ──────────────────────────
-VERDICT_SYSTEM_PROMPT          = _load_prompt('verdict_system_prompt.txt')
-RACE_VERDICT_SYSTEM_PROMPT     = _load_prompt('race_verdict_system_prompt.txt')
 COMBINED_VERDICT_SYSTEM_PROMPT = _load_prompt('combined_verdict_system_prompt.txt')
 
 
@@ -1000,124 +998,6 @@ def _anthropic_create_with_retry(client, max_retries=3, **kwargs):
             print(f'  ⚠️  Rate limit — waiting {wait}s before retry {attempt + 1}/{max_retries} '
                   f'({kwargs.get("model","?")} call)...')
             _time.sleep(wait)
-
-
-def generate_race_verdicts(race_json, api_key, learnings_db=None):
-    """
-    Send one race JSON to Claude Sonnet and return {horse_name: verdict_text}.
-    Raises on API errors so callers can catch per-race.
-    """
-    import anthropic as _anthropic
-    import json as _json
-    import re as _re
-
-    client = _anthropic.Anthropic(api_key=api_key)
-    horse_names = [h['name'] for h in race_json.get('horses', [])]
-
-    payload = dict(race_json)
-    if learnings_db:
-        payload['learnings_db'] = learnings_db
-
-    user_msg = (
-        'Write a Racing Post style verdict for each horse in this race.\n'
-        '3-5 concise sentences per horse. Be direct and factual.\n\n'
-        'Key fields to interpret (see system prompt for full reference):\n'
-        '  val / rtr              -- handicap edge vs last-run form\n'
-        '  horse_stats ae_place   -- place A/E (>1.0 outperforms market)\n'
-        '  trainer/jockey ae_place + pp365 -- handler quality signal\n'
-        '  condition_panel by_going/by_dist -- going + distance record\n'
-        '  change_alerts          -- headgear, trainer, owner changes\n'
-        '  draw_bias              -- stall pos_perc bias (positive = favours front)\n'
-        '  recent_form[].notepad  -- unlucky/strong run flagged by AI\n'
-        '  recent_form[].arr      -- ARR trend signal (rising = improving)\n'
-        '  recent_form[].opp      -- today opponents met in same past race:\n'
-        '      arr_diff > 0 = this horse outperformed them on ARR\n'
-        '      arr_diff < 0 = they outperformed this horse\n'
-        '  recent_form[].opp2     -- indirect form links via common rivals\n\n'
-        'Return ONLY a valid JSON object -- no markdown, no extra text.\n'
-        f'Keys must be exactly: {_json.dumps(horse_names)}\n\n'
-        f'Race data:\n{_json.dumps(payload, indent=2, default=str)}'
-    )
-
-    resp = _anthropic_create_with_retry(
-        client,
-        model='claude-sonnet-4-6',
-        max_tokens=4096,
-        system=VERDICT_SYSTEM_PROMPT,
-        messages=[{'role': 'user', 'content': user_msg}],
-    )
-
-    if resp.stop_reason == 'max_tokens':
-        _race_label = race_json.get('race', race_json.get('meeting', '?'))
-        print(
-            f'  ⚠️  TOKEN LIMIT: generate_race_verdicts "{_race_label}" truncated '
-            f'(max_tokens=4096, in={resp.usage.input_tokens}, '
-            f'out={resp.usage.output_tokens}) — increase max_tokens or reduce payload'
-        )
-
-    text = resp.content[0].text.strip()
-    text = _re.sub(r'^```(?:json)?\s*', '', text)
-    text = _re.sub(r'\s*```$', '', text)
-    match = _re.search(r'\{[\s\S]*\}', text)
-    if match:
-        try:
-            return _json.loads(match.group())
-        except _json.JSONDecodeError:
-            pass
-    return {}
-
-
-def generate_race_verdict(race_json, api_key, learnings_db=None):
-    """
-    Send one race JSON to Claude and return a race-level NAP + Each Way recommendation.
-    Returns dict: {nap: {horse, confidence, reason}, each_way: {horse, confidence, reason}}
-    or {} on failure.
-    """
-    import anthropic as _anthropic
-    import json as _json
-    import re as _re
-
-    client = _anthropic.Anthropic(api_key=api_key)
-
-    payload = dict(race_json)
-    if learnings_db:
-        payload['learnings_db'] = learnings_db
-
-    horse_names = [h['name'] for h in race_json.get('horses', [])]
-    user_msg = (
-        f'Select one NAP and one EACH WAY horse for this race.\n'
-        f'Available horses: {_json.dumps(horse_names)}\n\n'
-        f'Race data:\n{_json.dumps(payload, indent=2, default=str)}'
-    )
-
-    resp = _anthropic_create_with_retry(
-        client,
-        model='claude-sonnet-4-6',
-        max_tokens=512,
-        system=RACE_VERDICT_SYSTEM_PROMPT,
-        messages=[{'role': 'user', 'content': user_msg}],
-    )
-
-    if resp.stop_reason == 'max_tokens':
-        _race_label = race_json.get('race', race_json.get('meeting', '?'))
-        print(
-            f'  ⚠️  TOKEN LIMIT: generate_race_verdict "{_race_label}" truncated '
-            f'(max_tokens=512, in={resp.usage.input_tokens}, '
-            f'out={resp.usage.output_tokens}) — increase max_tokens'
-        )
-
-    text = resp.content[0].text.strip()
-    text = _re.sub(r'^```(?:json)?\s*', '', text)
-    text = _re.sub(r'\s*```$', '', text)
-    match = _re.search(r'\{[\s\S]*\}', text)
-    if match:
-        try:
-            result = _json.loads(match.group())
-            if 'nap' in result and 'each_way' in result:
-                return result
-        except _json.JSONDecodeError:
-            pass
-    return {}
 
 
 def generate_combined_verdict(race_json, api_key, learnings_db=None):
