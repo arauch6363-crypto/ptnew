@@ -985,6 +985,22 @@ def export_all_races_html(df_hist, df_today,
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+def _anthropic_create_with_retry(client, max_retries=3, **kwargs):
+    """Call client.messages.create with retry on RateLimitError (waits 60s × attempt)."""
+    import anthropic as _anthropic
+    import time as _time
+    for attempt in range(max_retries + 1):
+        try:
+            return client.messages.create(**kwargs)
+        except _anthropic.RateLimitError as e:
+            if attempt == max_retries:
+                raise
+            wait = 60 * (attempt + 1)
+            print(f'  ⚠️  Rate limit — waiting {wait}s before retry {attempt + 1}/{max_retries} '
+                  f'({kwargs.get("model","?")} call)...')
+            _time.sleep(wait)
+
+
 def generate_race_verdicts(race_json, api_key, learnings_db=None):
     """
     Send one race JSON to Claude Sonnet and return {horse_name: verdict_text}.
@@ -1022,7 +1038,8 @@ def generate_race_verdicts(race_json, api_key, learnings_db=None):
         f'Race data:\n{_json.dumps(payload, indent=2, default=str)}'
     )
 
-    resp = client.messages.create(
+    resp = _anthropic_create_with_retry(
+        client,
         model='claude-sonnet-4-6',
         max_tokens=4096,
         system=VERDICT_SYSTEM_PROMPT,
@@ -1072,7 +1089,8 @@ def generate_race_verdict(race_json, api_key, learnings_db=None):
         f'Race data:\n{_json.dumps(payload, indent=2, default=str)}'
     )
 
-    resp = client.messages.create(
+    resp = _anthropic_create_with_retry(
+        client,
         model='claude-sonnet-4-6',
         max_tokens=512,
         system=RACE_VERDICT_SYSTEM_PROMPT,
