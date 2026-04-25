@@ -113,8 +113,9 @@ LINE_COLOURS = [
 _date_cache = {}
 
 # ── System prompts — loaded from prompts/ directory ──────────────────────────
-VERDICT_SYSTEM_PROMPT      = _load_prompt('verdict_system_prompt.txt')
-RACE_VERDICT_SYSTEM_PROMPT = _load_prompt('race_verdict_system_prompt.txt')
+VERDICT_SYSTEM_PROMPT          = _load_prompt('verdict_system_prompt.txt')
+RACE_VERDICT_SYSTEM_PROMPT     = _load_prompt('race_verdict_system_prompt.txt')
+COMBINED_VERDICT_SYSTEM_PROMPT = _load_prompt('combined_verdict_system_prompt.txt')
 
 
 def _ensure_date_col(df):
@@ -1102,6 +1103,64 @@ def generate_race_verdict(race_json, api_key, learnings_db=None):
         print(
             f'  ⚠️  TOKEN LIMIT: generate_race_verdict "{_race_label}" truncated '
             f'(max_tokens=512, in={resp.usage.input_tokens}, '
+            f'out={resp.usage.output_tokens}) — increase max_tokens'
+        )
+
+    text = resp.content[0].text.strip()
+    text = _re.sub(r'^```(?:json)?\s*', '', text)
+    text = _re.sub(r'\s*```$', '', text)
+    match = _re.search(r'\{[\s\S]*\}', text)
+    if match:
+        try:
+            result = _json.loads(match.group())
+            if 'nap' in result and 'each_way' in result:
+                return result
+        except _json.JSONDecodeError:
+            pass
+    return {}
+
+
+def generate_combined_verdict(race_json, api_key, learnings_db=None):
+    """
+    Single API call that returns both horse-level verdicts and the NAP/EW selection.
+    Replaces the two separate generate_race_verdicts + generate_race_verdict calls.
+
+    Returns dict with:
+      'verdicts'  — {horse_name: verdict_text, ...}
+      'nap'       — {horse, confidence, reason}
+      'each_way'  — {horse, confidence, reason}
+    or {} on failure.
+    """
+    import anthropic as _anthropic
+    import json as _json
+    import re as _re
+
+    client = _anthropic.Anthropic(api_key=api_key)
+
+    payload = dict(race_json)
+    if learnings_db:
+        payload['learnings_db'] = learnings_db
+
+    horse_names = [h['name'] for h in race_json.get('horses', [])]
+    user_msg = (
+        f'Write a verdict for each horse and select the NAP and EACH WAY.\n'
+        f'Horses: {_json.dumps(horse_names)}\n\n'
+        f'Race data:\n{_json.dumps(payload, indent=2, default=str)}'
+    )
+
+    resp = _anthropic_create_with_retry(
+        client,
+        model='claude-sonnet-4-6',
+        max_tokens=4096,
+        system=COMBINED_VERDICT_SYSTEM_PROMPT,
+        messages=[{'role': 'user', 'content': user_msg}],
+    )
+
+    _race_label = race_json.get('race', race_json.get('meeting', '?'))
+    if resp.stop_reason == 'max_tokens':
+        print(
+            f'  ⚠️  TOKEN LIMIT: generate_combined_verdict "{_race_label}" truncated '
+            f'(max_tokens=4096, in={resp.usage.input_tokens}, '
             f'out={resp.usage.output_tokens}) — increase max_tokens'
         )
 
