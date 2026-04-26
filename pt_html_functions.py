@@ -1003,10 +1003,14 @@ def _anthropic_create_with_retry(client, max_retries=3, **kwargs):
             _time.sleep(wait)
 
 
-def generate_combined_verdict(race_json, api_key, learnings_db=None):
+def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnings=20):
     """
     Single API call that returns both horse-level verdicts and the NAP/EW selection.
     Replaces the two separate generate_race_verdicts + generate_race_verdict calls.
+
+    learnings_db entries are sorted by counter (desc) and the top max_learnings are
+    injected as a cached system-prompt block — so all races in one session share the
+    cached token cost (Anthropic ephemeral cache, 5-min TTL).
 
     Returns dict with:
       'verdicts'  — {horse_name: verdict_text, ...}
@@ -1020,26 +1024,53 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None):
 
     client = _anthropic.Anthropic(api_key=api_key)
 
-    payload = dict(race_json)
+    # ── Build system blocks with prompt caching ───────────────────────────────
+    system_blocks = [
+        {
+            'type': 'text',
+            'text': COMBINED_VERDICT_SYSTEM_PROMPT,
+            'cache_control': {'type': 'ephemeral'},
+        }
+    ]
     if learnings_db:
-        payload['learnings_db'] = learnings_db
+        top_learnings = sorted(
+            learnings_db, key=lambda x: x.get('counter', 0), reverse=True
+        )[:max_learnings]
+        lines = [f'{i+1}. [n={e.get("counter",1)}] {e.get("learning","")}'
+                 for i, e in enumerate(top_learnings)]
+        learnings_block = (
+            f'## Past Learnings (top {len(top_learnings)} by confirmation count)\n'
+            + '\n'.join(lines)
+        )
+        system_blocks.append({
+            'type': 'text',
+            'text': learnings_block,
+            'cache_control': {'type': 'ephemeral'},
+        })
 
+    # ── User message — race data only (no learnings blob) ────────────────────
     horse_names = [h['name'] for h in race_json.get('horses', [])]
     user_msg = (
         f'Write a verdict for each horse and select the NAP and EACH WAY.\n'
         f'Horses: {_json.dumps(horse_names)}\n\n'
-        f'Race data:\n{_json.dumps(payload, indent=2, default=str)}'
+        f'Race data:\n{_json.dumps(race_json, indent=2, default=str)}'
     )
 
     resp = _anthropic_create_with_retry(
         client,
         model='claude-sonnet-4-6',
         max_tokens=4096,
-        system=COMBINED_VERDICT_SYSTEM_PROMPT,
+        system=system_blocks,
         messages=[{'role': 'user', 'content': user_msg}],
     )
 
     _race_label = race_json.get('race', race_json.get('meeting', '?'))
+    _cache_read = getattr(resp.usage, 'cache_read_input_tokens', 0) or 0
+    _cache_created = getattr(resp.usage, 'cache_creation_input_tokens', 0) or 0
+    _cache_info = (f'  💾 cache hit {_cache_read:,} tok' if _cache_read
+                   else f'  📝 cache write {_cache_created:,} tok' if _cache_created
+                   else '')
+    print(f'  {_race_label}: in={resp.usage.input_tokens} out={resp.usage.output_tokens}{_cache_info}')
     if resp.stop_reason == 'max_tokens':
         print(
             f'  ⚠️  TOKEN LIMIT: generate_combined_verdict "{_race_label}" truncated '
