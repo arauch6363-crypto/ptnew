@@ -1511,25 +1511,8 @@ def _render_runners_html(race_rows, runners_hist,
             + '</span>'
         )
 
-    def _build_prefs_html(entity_col, entity_val, hist_df, specs):
-        if entity_val == '—' or not entity_val:
-            return ''
-        chips = []
-        for icon, label, subgroup_col, today_val in specs:
-            t, p, n = _ttest_pref(hist_df, entity_col, entity_val, subgroup_col, today_val)
-            chip = _pref_chip_html(icon, label, t, p, n, today_val)
-            if chip:
-                chips.append(chip)
-        if not chips:
-            return ''
-        return (
-            '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'
-            + ''.join(chips)
-            + '</div>'
-        )
-
     def _build_prefs_data(entity_col, entity_val, hist_df, specs):
-        """Structured version of _build_prefs_html — returns list of dicts for JSON."""
+        """Compute t-test preferences once — returns list of dicts for JSON and HTML."""
         if entity_val == '—' or not entity_val:
             return []
         result = []
@@ -1541,6 +1524,23 @@ def _render_runners_html(race_rows, runners_hist,
                     't': t, 'p': p, 'n': n, 'sig': (p is not None and p < 0.05),
                 })
         return result
+
+    def _prefs_data_to_html(prefs_data):
+        """Render pref chips from pre-computed _build_prefs_data result — no t-tests."""
+        if not prefs_data:
+            return ''
+        chips = [
+            _pref_chip_html(item['icon'], item['label'], item['t'], item['p'], item['n'], item['condition'])
+            for item in prefs_data
+        ]
+        chips = [c for c in chips if c]
+        if not chips:
+            return ''
+        return (
+            '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px">'
+            + ''.join(chips)
+            + '</div>'
+        )
 
     def _today_val(col):
         if col in rows.columns:
@@ -2799,46 +2799,11 @@ def _render_runners_html(race_rows, runners_hist,
         today_owner_for_trainer  = _row_val('ownerName') or None
         horse_age = _row_val('age') or None
 
-        jockey_prefs_html = _build_prefs_html(
+        # Compute t-tests once; render HTML from the same results (no duplicate scipy calls)
+        _jockey_prefs_data = _build_prefs_data(
             'jockeyName', jockey if jockey != '—' else '', _hist_750,
             [('🎩', 'Trainer', 'trainerName', today_trainer_for_jockey),
-             ('📍', 'Meeting', 'name_meeting', horse_meeting)]
-        )
-        trainer_prefs_html = _build_prefs_html(
-            'trainerName', trainer if trainer != '—' else '', _hist_750,
-            [('🏇', 'Jockey',   'jockeyName',  today_jockey_for_trainer),
-             ('👤', 'Owner',    'ownerName',   today_owner_for_trainer),
-             ('📍', 'Meeting',  'name_meeting', horse_meeting),
-             ('🏆', 'RaceType', 'type',         horse_racetype)]
-        )
-        if not trainer_prefs_html:
-            trainer_prefs_html = _build_prefs_html(
-                'trainerName', trainer if trainer != '—' else '', _hist_750,
-                [('🏇', 'Jockey',   'jockeyName',  today_jockey_for_trainer),
-                 ('👤', 'Owner',    'ownerName',   today_owner_for_trainer),
-                 ('📍', 'Meeting',  'name_meeting', horse_meeting),
-                 ('🏆', 'RaceType', 'raceType',    horse_racetype)]
-            )
-        horse_prefs_html = _build_prefs_html(
-            'horseId', hid, _hist_all,
-            [('📍', 'Meeting',  'name_meeting',   horse_meeting),
-             ('📏', 'Distance', 'distance_group', horse_dist_grp),
-             ('🌱', 'Going',    'going_category', horse_going_grp)]
-        )
-        sire_prefs_html = _build_prefs_html(
-            'horseSir', sire if sire != '—' else '', _hist_all,
-            [('📏', 'Distance', 'distance_group', horse_dist_grp),
-             ('🌱', 'Going',    'going_category', horse_going_grp),
-             ('🎂', 'Age',      'age',            horse_age)]
-        )
-
-        trainer_hc_html = _hot_cold_html(trainer if trainer != '—' else '', hot_cold_trainer)
-        jockey_hc_html  = _hot_cold_html(jockey  if jockey  != '—' else '', hot_cold_jockey)
-
-        _horse_prefs_data = _build_prefs_data('horseId', hid, _hist_all,
-            [('📍', 'Meeting',  'name_meeting',   horse_meeting),
-             ('📏', 'Distance', 'distance_group', horse_dist_grp),
-             ('🌱', 'Going',    'going_category', horse_going_grp)])
+             ('📍', 'Meeting', 'name_meeting', horse_meeting)])
         _trainer_prefs_data = _build_prefs_data(
             'trainerName', trainer if trainer != '—' else '', _hist_750,
             [('🏇', 'Jockey',   'jockeyName',  today_jockey_for_trainer),
@@ -2852,15 +2817,23 @@ def _render_runners_html(race_rows, runners_hist,
                  ('👤', 'Owner',    'ownerName',   today_owner_for_trainer),
                  ('📍', 'Meeting',  'name_meeting', horse_meeting),
                  ('🏆', 'RaceType', 'raceType',    horse_racetype)])
-        _jockey_prefs_data = _build_prefs_data(
-            'jockeyName', jockey if jockey != '—' else '', _hist_750,
-            [('🎩', 'Trainer', 'trainerName', today_trainer_for_jockey),
-             ('📍', 'Meeting', 'name_meeting', horse_meeting)])
+        _horse_prefs_data = _build_prefs_data('horseId', hid, _hist_all,
+            [('📍', 'Meeting',  'name_meeting',   horse_meeting),
+             ('📏', 'Distance', 'distance_group', horse_dist_grp),
+             ('🌱', 'Going',    'going_category', horse_going_grp)])
         _sire_prefs_data = _build_prefs_data(
             'horseSir', sire if sire != '—' else '', _hist_all,
             [('📏', 'Distance', 'distance_group', horse_dist_grp),
              ('🌱', 'Going',    'going_category', horse_going_grp),
              ('🎂', 'Age',      'age',            horse_age)])
+
+        jockey_prefs_html  = _prefs_data_to_html(_jockey_prefs_data)
+        trainer_prefs_html = _prefs_data_to_html(_trainer_prefs_data)
+        horse_prefs_html   = _prefs_data_to_html(_horse_prefs_data)
+        sire_prefs_html    = _prefs_data_to_html(_sire_prefs_data)
+
+        trainer_hc_html = _hot_cold_html(trainer if trainer != '—' else '', hot_cold_trainer)
+        jockey_hc_html  = _hot_cold_html(jockey  if jockey  != '—' else '', hot_cold_jockey)
 
         sp_html = ''
         if sp is not None and pd.notna(sp):
