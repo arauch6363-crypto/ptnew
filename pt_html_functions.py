@@ -1514,13 +1514,57 @@ def _render_runners_html(race_rows, runners_hist,
             + '</span>'
         )
 
+    # Pre-group history DFs by entity to make _ttest_pref O(1) lookup instead of O(N) scan
+    def _pregroup(hist_df, col):
+        if hist_df is None or col not in hist_df.columns:
+            return {}
+        return {str(k): grp for k, grp in hist_df.groupby(col)}
+
+    _hist_750_by_trainer = _pregroup(_hist_750, 'trainerName')
+    _hist_750_by_jockey  = _pregroup(_hist_750, 'jockeyName')
+    _hist_all_by_horse   = _pregroup(_hist_all, 'horseId')
+    _hist_all_by_sire    = _pregroup(_hist_all, 'horseSir')
+
+    def _ttest_from_group(grouped, entity_val, subgroup_col, today_condition_val):
+        """Like _ttest_pref but uses pre-grouped dict — O(1) lookup."""
+        if today_condition_val is None or (isinstance(today_condition_val, float) and pd.isna(today_condition_val)):
+            return None, None, 0
+        ent = grouped.get(str(entity_val))
+        if ent is None or ent.empty:
+            return None, None, 0
+        if subgroup_col not in ent.columns or 'pos_perc' not in ent.columns:
+            return None, None, 0
+        ent = ent.dropna(subset=['pos_perc'])
+        cond_str = str(today_condition_val)
+        mask_in  = ent[subgroup_col].astype(str) == cond_str
+        in_vals  = ent.loc[mask_in,  'pos_perc'].values
+        out_vals = ent.loc[~mask_in, 'pos_perc'].values
+        if len(in_vals) < 3 or len(out_vals) < 3:
+            return None, None, len(in_vals)
+        try:
+            t_stat, p_val = _scipy_stats.ttest_ind(in_vals, out_vals, equal_var=False)
+            return round(float(t_stat), 2), round(float(p_val), 4), len(in_vals)
+        except Exception:
+            return None, None, len(in_vals)
+
     def _build_prefs_data(entity_col, entity_val, hist_df, specs):
         """Compute t-test preferences once — returns list of dicts for JSON and HTML."""
         if entity_val == '—' or not entity_val:
             return []
+        # Use pre-grouped dicts for O(1) entity lookup; fall back to full DF scan
+        _grouped_map = {
+            ('trainerName', id(_hist_750)): _hist_750_by_trainer,
+            ('jockeyName',  id(_hist_750)): _hist_750_by_jockey,
+            ('horseId',     id(_hist_all)): _hist_all_by_horse,
+            ('horseSir',    id(_hist_all)): _hist_all_by_sire,
+        }
+        _grouped = _grouped_map.get((entity_col, id(hist_df)))
         result = []
         for icon, label, subgroup_col, today_val in specs:
-            t, p, n = _ttest_pref(hist_df, entity_col, entity_val, subgroup_col, today_val)
+            if _grouped is not None:
+                t, p, n = _ttest_from_group(_grouped, entity_val, subgroup_col, today_val)
+            else:
+                t, p, n = _ttest_pref(hist_df, entity_col, entity_val, subgroup_col, today_val)
             if t is not None:
                 result.append({
                     'icon': icon, 'label': label, 'condition': today_val,
@@ -1762,6 +1806,12 @@ def _render_runners_html(race_rows, runners_hist,
 
             return f'{line1}<br>{line2}<br>{line3}'
 
+        # Pre-build race→participants dict so OPP lookup is O(1) not O(N_hist)
+        _race_field_cache = {}
+        if 'raceId' in _all_hist.columns:
+            for _rc_id, _rc_grp in _all_hist.groupby('raceId'):
+                _race_field_cache[_rc_id] = _rc_grp
+
         for hid_raw in horse_ids:
             hid_str    = str(int(hid_raw))
             horse_runs = _hist_by_horse.get(hid_raw, pd.DataFrame())
@@ -1868,9 +1918,7 @@ def _render_runners_html(race_rows, runners_hist,
                     # OPP: today's starters who also ran in this historical race
                     opp_entries = []
                     if race_id is not None and not (isinstance(race_id, float) and pd.isna(race_id)):
-                        # Find all runners in this historical race
-                        _race_mask = _all_hist['raceId'] == race_id
-                        _race_field = _all_hist[_race_mask]
+                        _race_field = _race_field_cache.get(race_id, pd.DataFrame())
                         for _, _opp_row in _race_field.iterrows():
                             _opp_hid_raw = _opp_row.get('horseId', None)
                             if _opp_hid_raw is None or pd.isna(_opp_hid_raw):
@@ -2733,6 +2781,21 @@ def _render_runners_html(race_rows, runners_hist,
             pass  # silently skip if data insufficient
 
     import re as _re_safe
+
+    # Pre-build horse→history dict so headgear/trainer alert lookups are O(1)
+    _runners_hist_by_horse = {}
+    if runners_hist is not None and 'horseId' in runners_hist.columns:
+        for _rh_hid, _rh_grp in runners_hist.groupby('horseId'):
+            try:
+                _rh_key = str(int(_rh_hid))
+            except (ValueError, TypeError):
+                _rh_key = str(_rh_hid)
+            _rh_grp = _rh_grp.copy()
+            if 'date' in _rh_grp.columns:
+                _rh_grp['_hgdt'] = pd.to_datetime(_rh_grp['date'], errors='coerce')
+                _rh_grp = _rh_grp.sort_values('_hgdt', ascending=False)
+            _runners_hist_by_horse[_rh_key] = _rh_grp
+
     _race_json_horses = []
     cards_html = []
     for _, r in rows.iterrows():
@@ -2859,13 +2922,8 @@ def _render_runners_html(race_rows, runners_hist,
 
         _horse_change_alerts = []   # structured data collected alongside HTML alerts
         headgear_change_html = ''
-        if runners_hist is not None and hid and 'horseId' in runners_hist.columns:
-            _h_hist = runners_hist[runners_hist['horseId'].astype(str) == hid]
-            if 'date' in _h_hist.columns:
-                _h_hist = _h_hist.copy()
-                _h_hist['_hgdt'] = pd.to_datetime(_h_hist['date'], errors='coerce')
-                _h_hist = _h_hist.sort_values('_hgdt', ascending=False)
-            if not _h_hist.empty:
+        _h_hist = _runners_hist_by_horse.get(hid, pd.DataFrame())
+        if not _h_hist.empty:
                 _last = _h_hist.iloc[0]
                 _prev_blink = str(_last.get('blinkers', '')).strip() if pd.notna(_last.get('blinkers')) else ''
                 _prev_hood  = str(_last.get('hood', '')).strip()     if pd.notna(_last.get('hood'))     else ''
@@ -2898,13 +2956,8 @@ def _render_runners_html(race_rows, runners_hist,
 
         trainer_change_html = ''
         owner_change_html   = ''
-        if runners_hist is not None and hid and 'horseId' in runners_hist.columns:
-            _t_hist = runners_hist[runners_hist['horseId'].astype(str) == hid]
-            if 'date' in _t_hist.columns:
-                _t_hist = _t_hist.copy()
-                _t_hist['_tdt'] = pd.to_datetime(_t_hist['date'], errors='coerce')
-                _t_hist = _t_hist.sort_values('_tdt', ascending=False)
-            if not _t_hist.empty:
+        _t_hist = _h_hist  # same pre-built sorted history (sorted by _hgdt == _tdt)
+        if not _t_hist.empty:
                 # ── Trainer change ────────────────────────────────────────────
                 if 'trainerName' in _t_hist.columns:
                     _prev_trainer = str(_t_hist.iloc[0].get('trainerName', '')).strip()
