@@ -1945,6 +1945,9 @@ def _render_runners_html(race_rows, runners_hist,
                         'draw_val':   str(race_row.get('draw_unique', '') or race_row.get('draw', '') or '').strip() or None,
                         'wt_hist':    float(race_row.get('weightKg')) if race_row.get('weightKg') is not None and pd.notna(race_row.get('weightKg')) else None,
                         'lb_raw':     float(race_row.get('cumulative_lengths_back', 0) or 0),
+                        'meeting':    (str(race_row.get('name_meeting', '') or race_row.get('meetingName', '') or '').strip() or None),
+                        'race_class': (str(race_row.get('class', '') or '').strip() or None),
+                        'race_type':  (str(race_row.get('type', '') or '').strip() or None),
                         'opp2':       None,  # filled in post-processing after _race_to_participants is built
                     })
                 horse_form_context[hid_str] = ctx_entries
@@ -3172,6 +3175,10 @@ def _render_runners_html(race_rows, runners_hist,
                     'jockey':         e.get('jockey_name', ''),
                     'notepad':        bool(notepad_flags and e.get('race_id') is not None
                                           and notepad_flags.get((str(e['race_id']), hid), False)),
+                    'ff':             ff_stats_by_race.get(e.get('race_id')),
+                    'meeting':        e.get('meeting'),
+                    'class':          e.get('race_class'),
+                    'type':           e.get('race_type'),
                     'opp':            [{'name': n, 'adj': a} for n, a in e.get('opp', [])],
                     'opp2':           [{'b_name': o2['b_name'], 'x_name': o2['x_name'],
                                         'score': o2['score']}
