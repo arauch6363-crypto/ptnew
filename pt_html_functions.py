@@ -912,7 +912,8 @@ def export_all_races_html(df_hist, df_today,
                 f'{"&nbsp;·&nbsp;".join(hparts)}</div>'
             )
 
-            # ── verdict ───────────────────────────────────────────
+            # ── Paris Turf verdict ────────────────────────────────
+            paristurf_verdict = None
             verdict_html = ''
             if webTips_tdy is not None and 'raceId' in race_rows.columns:
                 rids = race_rows['raceId'].dropna().unique()
@@ -920,6 +921,7 @@ def export_all_races_html(df_hist, df_today,
                 if not tip_rows.empty and 'text' in tip_rows.columns:
                     vt = ' '.join(tip_rows['text'].dropna().astype(str)).strip()
                     if vt:
+                        paristurf_verdict = vt
                         verdict_html = (
                             f'<div style="background:#fffdf0;border-left:4px solid {TF["green"]};'
                             f'border-radius:0 6px 6px 0;padding:10px 16px;font-size:13px;color:#333;'
@@ -939,8 +941,9 @@ def export_all_races_html(df_hist, df_today,
                 pmu_odds_history=pmu_odds_history,
             )
             # Augment with race-level fields not available inside _render_runners_html
-            _race_json['total_prize_eur'] = total_prize_raw
-            _race_json['race_class']      = race_class
+            _race_json['total_prize_eur']     = total_prize_raw
+            _race_json['race_class']          = race_class
+            _race_json['paristurf_verdict']   = paristurf_verdict
 
             # ── assemble page ─────────────────────────────────────
             import re
