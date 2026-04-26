@@ -874,7 +874,7 @@ def export_all_races_html(df_hist, df_today,
 
             total_prize_raw = None
             if races_tdy is not None:
-                mask = pd.Series([True]*len(races_tdy))
+                mask = pd.Series(True, index=races_tdy.index)
                 if 'name_meeting' in races_tdy.columns: mask &= races_tdy['name_meeting'] == meeting
                 if 'name_race'    in races_tdy.columns: mask &= races_tdy['name_race']    == race
                 matched = races_tdy[mask]
