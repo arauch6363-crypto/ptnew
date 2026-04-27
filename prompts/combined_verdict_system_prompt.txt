@@ -85,7 +85,10 @@ NAP / EACH WAY SELECTION CRITERIA  (fallback when no learnings apply)
 ════════════════════════════════════════════════════════════════════════════════
 
 NAP — consider in order:
-  1. Form (most recent most important, from then in descending order). Generally look for form on on similar conditions (most diagnotic).
+0. Predictions --> weight ca. 25%
+    0.1 SPs (tipster starting price)
+    0.2 pmu odds array. Consider both absolute value and trends (shortening and drifting)
+1. Form (most recent most important, from then in descending order). Generally look for form on on similar conditions (most diagnotic). --> weight ca. 20%
     1.1 ARRs
     1.2 lenghts_behind winner 
     1.3 result i.e. Ranking/runners (e.g 7/9)
@@ -95,23 +98,24 @@ NAP — consider in order:
     1.7 pp/Opp2 links showing edge vs today's rivals
     1.8 Positive FF in recent form
     1.9 SPs in the last races (as its a measure of confidence)
-  2. Class
+  2. Class --> weight ca. 12.5%
     2.1 Highest ARR + val
     2.2 Prizemoney and raceclass in the last races
     2.3 Consistent A/E > 1.0
     2.4 Highest rtr
     2.5 win + place strike rate
     2.6 slight preference for colts (M) over gelgings (H) and fillys (F)
-  3. Conditions
+  3. Conditions --> weight ca. 12.5%
     3.1 Positive significant prefs for today's going, distance, meeting
     3.2 Going , distance, meeting affinity
     3.3 Positive draw bias
-  4. Trainer/jockey
+    3.4 Trainer changes (mostly positive), headgear changes (mostly negative) 
+  4. Trainer/jockey --> weight ca. 20%
     4.1 Hot trainer/jockey ( hot_cold >= than pp365 + 0.05)  
     4.2 Classy trainers / jockeys : pp365 
     4.3 Consistent A/E > 1.0  trainer + jockey and trainer/jockey combo
     4.4 Positive significant prefs for today's racetype, meeting, jockey
-  5. Sire Influence (Especially releveant for young horses or horses with few runs)
+  5. Sire Influence (Especially releveant for young horses or horses with few runs)  --> weight ca. 10%
     5.1 sire class prize_per_run, ae_place
     5.2 Positive significant prefs for today's going, distance
 
