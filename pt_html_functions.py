@@ -1005,15 +1005,13 @@ def _anthropic_create_with_retry(client, max_retries=3, **kwargs):
 
 def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnings=20):
     """
-    Single API call that returns both horse-level verdicts and the NAP/EW selection.
-    Replaces the two separate generate_race_verdicts + generate_race_verdict calls.
+    Single API call that returns the NAP/EW selection with 3-4 sentence reasons.
 
     learnings_db entries are sorted by counter (desc) and the top max_learnings are
     injected as a cached system-prompt block — so all races in one session share the
     cached token cost (Anthropic ephemeral cache, 5-min TTL).
 
     Returns dict with:
-      'verdicts'  — {horse_name: verdict_text, ...}
       'nap'       — {horse, confidence, reason}
       'each_way'  — {horse, confidence, reason}
     or {} on failure.
@@ -1051,7 +1049,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
     # ── User message — race data only (no learnings blob) ────────────────────
     horse_names = [h['name'] for h in race_json.get('horses', [])]
     user_msg = (
-        f'Write a verdict for each horse and select the NAP and EACH WAY.\n'
+        f'Select the NAP and EACH WAY for this race.\n'
         f'Horses: {_json.dumps(horse_names)}\n\n'
         f'Race data:\n{_json.dumps(race_json, indent=2, default=str)}'
     )
@@ -1059,7 +1057,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
     resp = _anthropic_create_with_retry(
         client,
         model='claude-sonnet-4-6',
-        max_tokens=4096,
+        max_tokens=1024,
         system=system_blocks,
         messages=[{'role': 'user', 'content': user_msg}],
     )
@@ -3146,7 +3144,6 @@ def _render_runners_html(race_rows, runners_hist,
                           all_pp=all_pp365_sire)
             + '</div>'
 
-            + '<!--VERDICT_START:' + _re_safe.sub(r'[^A-Za-z0-9]', '_', str(horse)) + '--><!--VERDICT_END:' + _re_safe.sub(r'[^A-Za-z0-9]', '_', str(horse)) + '-->'
             + '</div>'
             + '</div>'
         )
