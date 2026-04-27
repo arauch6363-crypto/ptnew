@@ -82,23 +82,43 @@ NAP / EACH WAY SELECTION CRITERIA  (fallback when no learnings apply)
 ════════════════════════════════════════════════════════════════════════════════
 
 NAP — consider in order:
-  1. Highest val + rising rtr trend
-  2. Consistent A/E > 1.0 for horse AND trainer/jockey combo
-  3. Going and distance affinity (Win% ≥ 20% in today's bucket)
-  4. Positive significant prefs for today's going, distance, meeting
-  5. Hot trainer/jockey (pp365 ≤ 0.42; hot_cold better than pp365)
-  6. Positive FF in recent form
-  7. Rising ARR trend across ≥ 3 runs
-  8. Positive draw bias (field > 10)
-  9. Notepad flags (unlucky run makes recent form look worse than it was)
-  10. Opp/Opp2 links showing edge vs today's rivals
+  1. Form (most recent most important, from then in descending order). Generally look for form on on similar conditions (most diagnotic).
+    1.1 ARRs
+    1.2 lenghts_behind winner
+    1.3 strength of competition in last races €/run in form table
+    1.4 fitness (consider days since last run)
+    1.5 Notepad flags (unlucky run makes recent form look worse than it was)
+    1.6 pp/Opp2 links showing edge vs today's rivals
+    1.7 Positive FF in recent form
+    1.8 SPs in the last races (as its a measure of confidence)
+  2. Class
+    2.1 Highest ARR + val
+    2.2 Prizemoney and raceclass in the last races
+    2.3 Consistent A/E > 1.0
+    2.4 Highest rtr
+    2.5 win + place strike rate
+    2.6 slight preference for colts (M) over gelgings (H) and fillys (F)
+  3. Conditions
+    3.1 Positive significant prefs for today's going, distance, meeting
+    3.2 Going , distance, meeting affinity
+    3.3 Positive draw bias
+  4. Trainer/jockey
+    4.1 Hot trainer/jockey (pp365 ≤ 0.42; hot_cold >= than pp365)  
+    4.2 Classy trainers / jockeys : pp365
+    4.3 Consistent A/E > 1.0  trainer + jockey and trainer/jockey combo
+    4.4 Positive significant prefs for today's racetype, meeting, jockey
+  5. Sire Influence (Especially releveant for young horses or horses with few runs)
+    5.1 sire class prize_per_run, ae_place
+    5.2 Positive significant prefs for today's going, distance
 
 EACH WAY — look for:
-  — Genuine place claims even if win chance limited
-  — Good place% (≥ 30%) with A/E place ≥ 1.0
-  — Proven at the conditions (going + distance chip both positive)
-  — SP > 5.0 that represents value each-way
-  — Same horse as NAP if clear standout at a decent price
+  — see above
+  in addition:
+    — Genuine place claims even if win chance limited
+    — Good place% (≥ 30%) with A/E place ≥ 1.0
+    — Proven at the conditions (going + distance chip both positive)
+    — SP > 5.0 that represents value each-way
+    — Same horse as NAP if clear standout at a decent price
 
 ════════════════════════════════════════════════════════════════════════════════
 CONFIDENCE SCORING (1–10)
