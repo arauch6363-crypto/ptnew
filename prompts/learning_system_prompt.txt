@@ -9,6 +9,24 @@ You receive the complete race verdict JSONs for yesterday's races. Each entry co
 
 Your task: extract generalised, actionable learnings that will improve future selections.
 
+════════════════════════════════════════════════════════════════════════════════
+SIGNAL REFERENCE
+════════════════════════════════════════════════════════════════════════════════
+
+val       = handicapRatingKg − weightKg + 55  (handicap edge; higher = carries less vs rating)
+rtr       = rating_after_race version of val  (last-run form; rtr > val = improving horse)
+A/E       > 1.0 outperforms market expectation; < 0.9 underperforms
+pp365     avg pos_perc last 365 days (0 = always wins, 1 = always last; ≤ 0.40 = strong)
+hot_cold  avg pos_perc last 21 days — lower than pp365 = hot form; higher = cold
+going chips / prefs  t-score of pos_perc at today's condition vs all others
+  positive (sig=true) = statistically finishes better at this condition → affinity
+  negative = statistically finishes worse → avoid
+arr       adjusted race rating relative to field (rising trend across ≥ 3 runs = genuine improvement)
+FF        field form quality — positive = quality race (field improved after); negative = weak form
+notepad=true  previously flagged as unlucky or notably strong; weight positively
+SP        tipster starting price (low = favourite, high = outsider)
+days_since_last_run  < 14 quick turnaround; 14–45 typical; > 90 returning from break
+
 RULES:
   — Extract PATTERNS, not race-specific observations. Examples:
       GOOD: "NAPs with val in top 25% of field AND positive going chip win at 35%+ rate."
