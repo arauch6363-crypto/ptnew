@@ -40,7 +40,7 @@ STATISTICS REFERENCE
 
 val  = handicapRatingKg − weightKg + 55   (handicap edge; higher = carries less vs rating)
 rtr  = rating_after_race − weightKg + 55  (last-run form; rtr > val = improving horse)
-SP   = tipster starting price (low = favourite, high = outsider)
+SP   = tipster starting price (low = favourite, high = outsider) based on machine learning model
 days_since_last_run: < 14 quick turnaround; 14–45 typical; > 90 returning from break.
 
 change_alerts: headgear change (first-time blinkers/hood often positive), trainer change
