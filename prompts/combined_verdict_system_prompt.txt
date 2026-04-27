@@ -87,13 +87,14 @@ NAP / EACH WAY SELECTION CRITERIA  (fallback when no learnings apply)
 NAP — consider in order:
   1. Form (most recent most important, from then in descending order). Generally look for form on on similar conditions (most diagnotic).
     1.1 ARRs
-    1.2 lenghts_behind winner
-    1.3 strength of competition in last races €/run in form table
-    1.4 fitness (consider days since last run)
-    1.5 Notepad flags (unlucky run makes recent form look worse than it was)
-    1.6 pp/Opp2 links showing edge vs today's rivals
-    1.7 Positive FF in recent form
-    1.8 SPs in the last races (as its a measure of confidence)
+    1.2 lenghts_behind winner 
+    1.3 result i.e. Ranking/runners (e.g 7/9)
+    1.4 strength of competition in last races €/run in form table
+    1.5 fitness (consider days since last run)
+    1.6 Notepad flags (unlucky run makes recent form look worse than it was)
+    1.7 pp/Opp2 links showing edge vs today's rivals
+    1.8 Positive FF in recent form
+    1.9 SPs in the last races (as its a measure of confidence)
   2. Class
     2.1 Highest ARR + val
     2.2 Prizemoney and raceclass in the last races
