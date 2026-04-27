@@ -1034,8 +1034,10 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
         top_learnings = sorted(
             learnings_db, key=lambda x: x.get('counter', 0), reverse=True
         )[:max_learnings]
-        lines = [f'{i+1}. [n={e.get("counter",1)}] {e.get("learning","")}'
-                 for i, e in enumerate(top_learnings)]
+        lines = [
+            f'{i+1}. [n={e.get("counter",1)}, dir={e.get("direction","?")}, cat={e.get("category","?")}] {e.get("learning","")}'
+            for i, e in enumerate(top_learnings)
+        ]
         learnings_block = (
             f'## Past Learnings (top {len(top_learnings)} by confirmation count)\n'
             + '\n'.join(lines)
@@ -1072,7 +1074,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
     if resp.stop_reason == 'max_tokens':
         print(
             f'  ⚠️  TOKEN LIMIT: generate_combined_verdict "{_race_label}" truncated '
-            f'(max_tokens=4096, in={resp.usage.input_tokens}, '
+            f'(max_tokens=1024, in={resp.usage.input_tokens}, '
             f'out={resp.usage.output_tokens}) — increase max_tokens'
         )
 
