@@ -107,8 +107,8 @@ NAP — consider in order:
     3.2 Going , distance, meeting affinity
     3.3 Positive draw bias
   4. Trainer/jockey
-    4.1 Hot trainer/jockey (pp365 ≤ 0.42; hot_cold >= than pp365)  
-    4.2 Classy trainers / jockeys : pp365
+    4.1 Hot trainer/jockey ( hot_cold >= than pp365 + 0.05)  
+    4.2 Classy trainers / jockeys : pp365 
     4.3 Consistent A/E > 1.0  trainer + jockey and trainer/jockey combo
     4.4 Positive significant prefs for today's racetype, meeting, jockey
   5. Sire Influence (Especially releveant for young horses or horses with few runs)
