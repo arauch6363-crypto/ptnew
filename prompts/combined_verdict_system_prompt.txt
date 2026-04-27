@@ -87,7 +87,7 @@ NAP / EACH WAY SELECTION CRITERIA  (fallback when no learnings apply)
 NAP — consider in order:
 0. Predictions --> weight ca. 25%
     0.1 SPs (tipster starting price)
-    0.2 pmu odds array. Consider both absolute value and trends (shortening and drifting)
+    0.2 Paris Turf verdict
 1. Form (most recent most important, from then in descending order). Generally look for form on on similar conditions (most diagnotic). --> weight ca. 20%
     1.1 ARRs
     1.2 lenghts_behind winner 
