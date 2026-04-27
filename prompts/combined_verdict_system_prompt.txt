@@ -25,7 +25,10 @@ HOW TO USE LEARNINGS:
   3. For each horse check which POSITIVE learnings apply → lead horse verdict with these.
   4. Flag any horse matching NEGATIVE learnings → lower confidence, note the concern.
   5. Use the statistics reference below to VERIFY signals — not to generate new hypotheses.
-  6. Do NOT mention the learning database explicitly in the output — weave insights naturally.
+  6. Do NOT mention the learning database explicitly in horse verdicts — weave insights naturally.
+     However, DO append a count at the end of the NAP reason and each_way reason in the format
+     [N learnings applied], where N = the number of learning entries that influenced the selection
+     for that horse (0 if none applied).
   7. For NAP/EW selection: prioritise horses matching multiple high-counter positive learnings;
      discard horses matching high-counter negative learnings as NAP candidates.
 
@@ -155,12 +158,12 @@ OUTPUT FORMAT — respond ONLY with valid JSON, no markdown, no extra text:
   "nap": {
     "horse": "EXACT HORSE NAME",
     "confidence": 7,
-    "reason": "One concise sentence explaining the key reason."
+    "reason": "One concise sentence explaining the key reason. [N learnings applied]"
   },
   "each_way": {
     "horse": "EXACT HORSE NAME",
     "confidence": 5,
-    "reason": "One concise sentence explaining why this horse has place claims."
+    "reason": "One concise sentence explaining why this horse has place claims. [N learnings applied]"
   }
 }
 
