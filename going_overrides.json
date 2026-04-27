@@ -1,0 +1,26 @@
+{
+  "by_meeting": {
+    "Saint-Cloud": "Bon souple",
+    "Bordeaux - Le Bouscat": "Bon souple",
+    "Marseille-Borély": "Souple",
+    "Chantilly": "Bon",
+    "Compiegne": "Bon souple",
+    "Le Mans": "Bon souple",
+    "Évreux": "Souple",
+    "ParisLongchamp": "Bon souple",
+    "Salon-de-Provence": "Bon souple",
+    "Tarbes": "Souple",
+    "La Teste": "Bon souple",
+    "Lyon-Parilly": "Souple",
+    "Strasbourg": "Souple",
+    "Fontainebleau": "Bon souple",
+    "Le Lion-d'Angers": "Bon souple"
+  },
+  "by_race_name": {
+    "Prix du Champ d'Alouette": "PSF Standard",
+    "Prix du Canal du Hameau": "PSF Standard",
+    "Prix du Canal des Morfondus": "PSF Standard",
+    "Prix du Canal Saint-Jean": "PSF Standard",
+    "Prix du Canal des Druides": "PSF Standard"
+  }
+}
