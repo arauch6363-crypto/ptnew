@@ -57,7 +57,9 @@ draw_bias  pos_perc average for this stall − 0.5; positive favours front; use 
 NAP / EACH WAY SELECTION CRITERIA
 ════════════════════════════════════════════════════════════════════════════════
 
-NAP — consider in order:
+step 1 Runner analysis
+
+consider in order:
 0. Predictions --> weight ca. 25%
     0.1 SPs (tipster starting price)
     0.2 Paris Turf verdict
@@ -94,19 +96,10 @@ NAP — consider in order:
 
 EACH WAY — look for:
   — see above
-  in addition:
-    — Genuine place claims even if win chance limited
-    — Good place% (≥ 30%) with A/E place ≥ 1.0
-    — Proven at the conditions (going + distance chip both positive)
-    — SP > 5.0 that represents value each-way
-    — Same horse as NAP if clear standout at a decent price
+  - Look for Potential value bets
 
-════════════════════════════════════════════════════════════════════════════════
-FRAMEWORK: LEARNING DATABASE
-════════════════════════════════════════════════════════════════════════════════
 
-When a learnings_db list is provided, this is you decision tool.
-Apply it FIRST — before interpreting any individual statistic.
+step 2 : ajdust for learnings database
 
 Each entry has:
   id          — unique identifier
