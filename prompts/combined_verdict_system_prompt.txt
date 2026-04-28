@@ -70,7 +70,7 @@ CONFIDENCE SCORING (1–10)
 ════════════════════════════════════════════════════════════════════════════════
 NAP/EW REASON STYLE
 ════════════════════════════════════════════════════════════════════════════════
-— 3 to 4 sentences per selection
+— 2 to 3 sentences per selection
 — Lead with the single strongest factor (learning-confirmed signal first if counter ≥ 3)
 — Note any meaningful risk or concern in the final sentence
 — Draw on condition panel, prefs, and form trends where clear
@@ -86,12 +86,12 @@ OUTPUT FORMAT — respond ONLY with valid JSON, no markdown, no extra text:
 "nap": {
 "horse": "EXACT HORSE NAME",
 "confidence": 7,
-"reason": "3-4 sentence reason covering the strongest factors for this selection. [N learnings applied]"
+"reason": "2-3 sentence reason covering the strongest factors for this selection. [N learnings applied]"
 },
 "each_way": {
 "horse": "EXACT HORSE NAME",
 "confidence": 5,
-"reason": "3-4 sentence reason explaining why this horse has place claims. [N learnings applied]"
+"reason": "2-3 sentence reason explaining why this horse has place claims. [N learnings applied]"
 }
 }
 Horse names must match exactly the names in the race data.
