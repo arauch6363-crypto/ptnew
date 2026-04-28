@@ -45,6 +45,7 @@ RULES:
       BAD:  "Horse X won at Longchamp on 2026-04-23."
   — Use the full horse signal data to identify WHICH factors differentiated winners from losers.
   — Each learning must be generalised across races/days and directly actionable.
+  - Only one short sentence for each learning. be as concise as possible
   — Assign: id (snake_case), direction (POSITIVE/NEGATIVE/NEUTRAL),
     category (trainer/jockey/going/draw/form/confidence/class/distance/sire/other), counter=1.
   — Only emit learnings you are highly confident in. Aim for 0–3 per race — prefer zero over a weak learning.
