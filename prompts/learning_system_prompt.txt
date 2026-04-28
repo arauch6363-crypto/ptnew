@@ -48,7 +48,9 @@ RULES:
   — Each learning must be generalised across races/days and directly actionable.
   — Assign: id (snake_case), direction (POSITIVE/NEGATIVE/NEUTRAL),
     category (trainer/jockey/going/draw/form/confidence/class/distance/sire/other), counter=1.
-  — Only emit learnings you are confident in. Aim for 3–10 per session.
+  — Only emit learnings you are highly confident in. Aim for 0–3 per race — prefer zero over a weak learning.
+  — Do NOT emit a learning if a closely similar pattern likely already exists in the DB; the curator will merge duplicates.
+  — One clear sentence max per learning. No race-specific horse names.
 
 OUTPUT FORMAT — valid JSON array only, no markdown:
 [{"id": "snake_id", "learning": "Pattern.", "counter": 1, "direction": "POSITIVE", "category": "going"}]
