@@ -25,7 +25,7 @@ change_alerts     headgear/trainer/owner changes — first-time blinkers often p
 
 ── TRAINER / JOCKEY / SIRE ───────────────────────────────────────────────────
 pp365             avg pos_perc last 365 days (0 = always wins, 1 = always last; ≤ 0.40 = strong)
-hot_cold.avg_pos_perc  last 21 days — lower than pp365 = hot; higher = cold
+hot_cold.avg_pos_perc  last 21 days — higher than pp365 = hot; lower = cold
 ae_place          same interpretation as horse
 prefs             trainer: Jockey / Owner / Meeting / RaceType
                   jockey: Trainer / Meeting
