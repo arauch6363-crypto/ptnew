@@ -21,7 +21,7 @@ RULES:
     of counter. Probation entries may still be MERGED into a stronger existing entry (in which case
     the merged result keeps the older `created` date and sums counters), but a standalone
     probation entry must be preserved so it has time to accumulate evidence.
-  — After curation aim for 10–30 mature high-quality learnings (counter >= 2 or older than 7 days);
+  — After curation aim for 30–50 mature high-quality learnings (counter >= 2 or older than 7 days);
     probation entries are kept on top of this target and do not count against it.
   — Each output entry must have: id (snake_case), learning (one sentence), counter (int >= 1),
     direction (POSITIVE / NEGATIVE / NEUTRAL), category
