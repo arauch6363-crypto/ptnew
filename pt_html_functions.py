@@ -1056,15 +1056,35 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
         f'Race data:\n{_json.dumps(race_json, indent=2, default=str)}'
     )
 
+    # Prefill the assistant turn with '{' so Claude must emit JSON immediately,
+    # with no preamble or chain-of-thought. Bounds output and removes truncation risk.
+    _messages = [
+        {'role': 'user', 'content': user_msg},
+        {'role': 'assistant', 'content': '{'},
+    ]
+
+    _max_tokens = 4096
     resp = _anthropic_create_with_retry(
         client,
         model='claude-sonnet-4-6',
-        max_tokens=2048,
+        max_tokens=_max_tokens,
         system=system_blocks,
-        messages=[{'role': 'user', 'content': user_msg}],
+        messages=_messages,
     )
 
     _race_label = race_json.get('race', race_json.get('meeting', '?'))
+
+    if resp.stop_reason == 'max_tokens':
+        _max_tokens *= 2
+        print(f'  ⏳ "{_race_label}" truncated — retrying with max_tokens={_max_tokens} ...')
+        resp = _anthropic_create_with_retry(
+            client,
+            model='claude-sonnet-4-6',
+            max_tokens=_max_tokens,
+            system=system_blocks,
+            messages=_messages,
+        )
+
     _cache_read = getattr(resp.usage, 'cache_read_input_tokens', 0) or 0
     _cache_created = getattr(resp.usage, 'cache_creation_input_tokens', 0) or 0
     _cache_info = (f'  💾 cache hit {_cache_read:,} tok' if _cache_read
@@ -1074,11 +1094,12 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
     if resp.stop_reason == 'max_tokens':
         print(
             f'  ⚠️  TOKEN LIMIT: generate_combined_verdict "{_race_label}" truncated '
-            f'(max_tokens=2048, in={resp.usage.input_tokens}, '
+            f'(max_tokens={_max_tokens}, in={resp.usage.input_tokens}, '
             f'out={resp.usage.output_tokens}) — increase max_tokens'
         )
 
-    text = resp.content[0].text.strip()
+    # Prefill content is not echoed by the API — restore '{' before parsing.
+    text = ('{' + resp.content[0].text).strip()
     text = _re.sub(r'^```(?:json)?\s*', '', text)
     text = _re.sub(r'\s*```$', '', text)
     match = _re.search(r'\{[\s\S]*\}', text)
