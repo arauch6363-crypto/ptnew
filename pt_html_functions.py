@@ -1059,7 +1059,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
     resp = _anthropic_create_with_retry(
         client,
         model='claude-sonnet-4-6',
-        max_tokens=2048,
+        max_tokens=4096,
         system=system_blocks,
         messages=[{'role': 'user', 'content': user_msg}],
     )
@@ -1074,7 +1074,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
     if resp.stop_reason == 'max_tokens':
         print(
             f'  ⚠️  TOKEN LIMIT: generate_combined_verdict "{_race_label}" truncated '
-            f'(max_tokens=2048, in={resp.usage.input_tokens}, '
+            f'(max_tokens=4096, in={resp.usage.input_tokens}, '
             f'out={resp.usage.output_tokens}) — increase max_tokens'
         )
 
