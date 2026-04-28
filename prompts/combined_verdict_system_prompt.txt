@@ -29,7 +29,7 @@ Jockey prefs  → Trainer combo / Meeting.
 Sire prefs    → Distance / Going / Age group.
 ── TRAINER / JOCKEY / SIRE ───────────────────────────────────────────────────
 pp365  average pos_perc last 365 days (0 = always wins, 1 = always last; ≤ 0.40 = strong).
-hot_cold  avg_pos_perc last 21 days — lower than pp365 = hot form; higher = cold.
+hot_cold  avg_pos_perc last 21 days — higher than pp365 = hot form; lower = cold.
 A/E, win%, place%  — same interpretation as horse.
 ── FORM TABLE (recent_form — up to 5 runs, oldest first) ─────────────────────
 date, going_cat, dist_grp, pos/field, lengths_beaten, sp, arr, val, jockey
