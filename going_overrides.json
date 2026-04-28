@@ -3,7 +3,7 @@
     "Saint-Cloud": "Bon souple",
     "Bordeaux - Le Bouscat": "Bon souple",
     "Marseille-Borély": "Souple",
-    "Chantilly": "Bon",
+    "Chantilly": "Souple",
     "Compiegne": "Bon souple",
     "Le Mans": "Bon souple",
     "Évreux": "Souple",
@@ -17,9 +17,9 @@
     "Le Lion-d'Angers": "Bon souple"
   },
   "by_race_name": {
-    "Prix du Champ d'Alouette": "PSF Standard",
-    "Prix du Canal du Hameau": "PSF Standard",
-    "Prix du Canal des Morfondus": "PSF Standard",
+    "Prix Chantilly Capitale du Cheval": "PSF Standard",
+    "Prix de l'Arrondissement de Beauvais": "PSF Standard",
+    "Prix de l'Arrondissement de Senlis": "PSF Standard",
     "Prix du Canal Saint-Jean": "PSF Standard",
     "Prix du Canal des Druides": "PSF Standard"
   }
