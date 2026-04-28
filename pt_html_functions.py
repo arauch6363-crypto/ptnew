@@ -1056,12 +1056,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
         f'Race data:\n{_json.dumps(race_json, indent=2, default=str)}'
     )
 
-    # Prefill the assistant turn with '{' so Claude must emit JSON immediately,
-    # with no preamble or chain-of-thought. Bounds output and removes truncation risk.
-    _messages = [
-        {'role': 'user', 'content': user_msg},
-        {'role': 'assistant', 'content': '{'},
-    ]
+    _messages = [{'role': 'user', 'content': user_msg}]
 
     _max_tokens = 4096
     resp = _anthropic_create_with_retry(
@@ -1098,8 +1093,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
             f'out={resp.usage.output_tokens}) — increase max_tokens'
         )
 
-    # Prefill content is not echoed by the API — restore '{' before parsing.
-    text = ('{' + resp.content[0].text).strip()
+    text = resp.content[0].text.strip()
     text = _re.sub(r'^```(?:json)?\s*', '', text)
     text = _re.sub(r'\s*```$', '', text)
     match = _re.search(r'\{[\s\S]*\}', text)
