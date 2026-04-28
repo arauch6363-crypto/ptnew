@@ -58,7 +58,7 @@ Trainer/Jockey (20%): hot_cold vs pp365, A/E, combo prefs, meeting/racetype pref
 Sire (10%): prize_per_run, ae_place, going/distance prefs (especially for lightly raced horses)
 
 EACH WAY: apply same criteria; prioritise value and place potential.
-Append [N learnings applied] at the end of each reason (0 if none).
+Append [learnings_db ids] at the end of each reason (None if none).
 ════════════════════════════════════════════════════════════════════════════════
 CONFIDENCE SCORING (1–10)
 ════════════════════════════════════════════════════════════════════════════════
