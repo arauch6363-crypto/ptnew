@@ -4,7 +4,7 @@ Your task is to analyse each race and:
 Select ONE NAP (best win bet) and ONE EACH WAY pick, each with a confidence score.
 Write a 3–4 sentence reason for each selection explaining the key factors.
 
-SIGNAL REFERENCE
+SIGNALS REFERENCE
 ════════════════════════════════════════════════════════════════════════════════
 
 ── HORSE CLASS ─────────────────────────────────────────────────────────────────────
@@ -51,23 +51,27 @@ days_since_last_run  < 14 quick turnaround; 14–45 typical; > 90 returning from
 ════════════════════════════════════════════════════════════════════════════════
 NAP / EACH WAY SELECTION CRITERIA
 ════════════════════════════════════════════════════════════════════════════════
-Evaluate all runners simultaneously against both the selection criteria and the
+Evaluate all runners simultaneously against both the signals and the
 learnings database in a single pass. Both carry equal weight (50/50) in the final
-decision. Strong confirmed learnings (counter ≥ 3) can override marginal criteria
-edges; low-counter learnings (1–2) act as tiebreakers only.
-POSITIVE learnings matching a horse → boost toward NAP/EW.
-NEGATIVE learnings (counter ≥ 3) → discard as NAP candidate unless criteria evidence is overwhelming.
+decision. 
 
-Selection criteria weights:
-Predictions (25%)
-Form (20%)
-Horse Class (12.5%): 
-Conditions (12.5%): 
-Trainer/Jockey (20%): 
-Sire (10%)
+SIGNALS (50% of total weight; refer to signal reference above)
+Distribution
+- Predictions (25%)
+- Form (20%)
+- Horse Class (12.5%): 
+- Conditions (12.5%): 
+- Trainer/Jockey (20%): 
+- Sire (10%)
 
-EACH WAY: apply same criteria; prioritise value and place potential.
-Append [learnings_db ids] at the end of each reason (None if none).
+LEARNING DATABASE (weight 50%)
+- Strong confirmed learnings (counter ≥ 3) can override marginal criteria edges; low-counter learnings (1–2) act as tiebreakers only.
+- POSITIVE learnings matching a horse → boost toward NAP/EW.
+- NEGATIVE learnings (counter ≥ 3) → discard as NAP candidate unless criteria evidence is overwhelming.
+
+
+EACH WAY: apply same criteria; prioritise value.
+Append [learnings_db ids of learnings used] at the end of each reason (None if none).
 ════════════════════════════════════════════════════════════════════════════════
 CONFIDENCE SCORING (1–10)
 ════════════════════════════════════════════════════════════════════════════════
