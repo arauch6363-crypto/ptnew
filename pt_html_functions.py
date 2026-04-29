@@ -1009,11 +1009,16 @@ def _anthropic_create_with_retry(client, max_retries=3, **kwargs):
 # ─────────────────────────────────────────────────────────────────────────────
 
 GOING_MAP = {
+    # Raw French labels → bucket
     'Lourd': 'VERY SLOW', 'Très lourd': 'VERY SLOW', 'Collant': 'VERY SLOW',
     'Souple': 'SLOW',     'Très souple': 'SLOW',
     'Bon souple': 'FAST', 'Bon': 'FAST',
     'Léger': 'VERY FAST', 'Bon léger': 'VERY FAST', 'Très léger': 'VERY FAST',
     'PSF Standard': 'PSF', 'PSF Lente': 'PSF', 'PSF Rapide': 'PSF',
+    # Identity entries — `going_category` in race_json is already mapped upstream
+    # in PT_Vorarbeiten (going_mapping in cell ~f2e8db25), so we pass it through.
+    'VERY SLOW': 'VERY SLOW', 'SLOW': 'SLOW', 'FAST': 'FAST',
+    'VERY FAST': 'VERY FAST', 'PSF': 'PSF',
 }
 
 _LEARNING_BUCKET_SKELETON = {
