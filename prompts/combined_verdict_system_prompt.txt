@@ -58,13 +58,13 @@ learnings database in a single pass. Both carry equal weight (50/50) in the fina
 decision. 
 
 SIGNALS (50% of total weight; refer to signal reference above)
-Distribution
-- Predictions (25%)
-- Form (20%)
-- Horse Class (12.5%): 
-- Conditions (12.5%): 
-- Trainer/Jockey (20%): 
-- Sire (10%)
+Priority rank
+- Predictions
+- Form
+- Horse Class
+- Conditions
+- Trainer/Jockey
+- Sire
 
 LEARNING DATABASE (weight 50%)
 - Strong confirmed learnings (counter ≥ 3) can override marginal criteria edges; low-counter learnings (1–2) act as tiebreakers only.
