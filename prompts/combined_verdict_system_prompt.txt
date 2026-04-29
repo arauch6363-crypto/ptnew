@@ -74,6 +74,26 @@ LEARNING DATABASE (weight 50%)
 
 EACH WAY: apply same criteria; prioritise value.
 Append [learnings_db ids of learnings used] at the end of each reason (None if none).
+
+════════════════════════════════════════════════════════════════════════════════
+LEARNING CONFLICT RESOLUTION
+════════════════════════════════════════════════════════════════════════════════
+If a POSITIVE learning (counter ≥ 3) and a NEGATIVE learning (counter ≥ 3) 
+both apply to the same horse, resolve in this order:
+
+1. SPECIFICITY wins
+   A learning tied to today's exact conditions (going + distance + race_type) 
+   outweighs a general learning. 
+   Example: NEGATIVE for "H / SLOW / 1601-2200" beats POSITIVE for "H / any".
+
+2. COUNTER wins if specificity is equal
+   The learning with the higher counter takes precedence.
+
+3. NEGATIVE bias if counters are equal
+   When all else is tied, the NEGATIVE learning wins.
+   Rationale: avoiding a bad bet is more valuable than finding a marginal winner.
+
+
 ════════════════════════════════════════════════════════════════════════════════
 CONFIDENCE SCORING (1–10)
 ════════════════════════════════════════════════════════════════════════════════
