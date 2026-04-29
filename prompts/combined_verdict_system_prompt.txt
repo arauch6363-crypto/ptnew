@@ -39,8 +39,8 @@ paris_turf_verdict  verdict of public racing analyst journalist
 
 ── FORM (recent_form[]) ───────────────────────────────────────────────
 arr                 adjusted performance rating vs field; arr should be read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
-pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners)
-lenghts_beaten      e.g. 2 = 2 lenghts behind winner
+pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners); pos in the top half can be considered competetive
+lenghts_beaten      e.g. 2 = 2 lenghts behind winner; <6 lenghts behind can be considered competetive
 ff                  field form quality — positive = strong race (field improved); negative = weak
 €/run               strenght of competition in last races; read relative to field; the higher the better
 notepad=true        previously flagged unlucky or notably strong; weight positively
