@@ -7,27 +7,35 @@ Write a 3–4 sentence reason for each selection explaining the key factors.
 SIGNAL REFERENCE
 ════════════════════════════════════════════════════════════════════════════════
 
-── HORSE ─────────────────────────────────────────────────────────────────────
-val               handicap edge (higher = carries less vs rating); rtr 
-horse_stats       runs/wins/places, win_pct, place_pct, ae_place, prize_per_run
-  ae_place        > 1.0 outperforms market; < 0.9 underperforms
-condition_panel   win/place record split by_going and by_distance bucket
-prefs             t-score vs all other conditions (horse: Meeting / Distance / Going)
-  sig=true        statistically significant affinity (positive t) or aversion (negative t)
-sp_tip            tipster starting price (lower = favourite)
-days_since_last_run  < 14 quick turnaround; 14–45 typical; > 90 returning from break
-draw_bias.bias    positive = high draw advantage at this track/trip; negative = disadvantage; n<10 = small sample
-change_alerts     headgear/trainer/owner changes — first-time blinkers often positive
+── HORSE CLASS ─────────────────────────────────────────────────────────────────────
+ARR               max median and average ARR in recent form give a solid undertanding of horse class; should be read relative to the field; the higher the better 
+val               handicap edge; should be read relative to the field; the higher the better 
+rtr               elo-rating of the horse; should be read relative to the field; the higher the better 
+horse_stats       runs/wins/places, win_pct, place_pct, a/e_place, prize_per_run 
+ae_place          > 1.0 outperforms market; < 0.9 underperforms
+sex               slight preference M > H > F
 
 ── TRAINER / JOCKEY / SIRE ───────────────────────────────────────────────────
-pp365             avg pos_perc last 365 days (0 = always wins, 1 = always last; ≤ 0.40 = strong)
+pp365             avg pos_perc last 365 days (0 = always wins, 1 = always last; > 0.5 = strong)
 hot_cold.avg_pos_perc  last 21 days — higher than pp365 = hot; lower = cold
 ae_place          same interpretation as horse
 prefs             trainer: Jockey / Owner / Meeting / RaceType
                   jockey: Trainer / Meeting
                   sire: Distance / Going / Age
+Sire stats and prefs especially for lightly raced horses
 
-── RECENT FORM (recent_form[]) ───────────────────────────────────────────────
+── CONDITIONS ───────────────────────────────────────────────────
+condition_panel   win/place record split by_going and by_distance bucket
+prefs             t-score vs all other conditions (horse: Meeting / Distance / Going)
+sig=true          statistically significant affinity (positive t) or aversion (negative t)
+draw_bias.bias    positive = high draw advantage at this track/trip; negative = disadvantage; n<10 = small sample
+change_alerts     headgear/trainer/owner changes — first-time blinkers often positive
+
+── Predictions ───────────────────────────────────────────────────
+sp_tip              tipster starting price (lower = favourite)
+paris_turf_verdict  verdict of public racing analyst journalist
+
+── FORM (recent_form[]) ───────────────────────────────────────────────
 arr                 adjusted performance rating vs field; arr should be read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
 ff                  field form quality — positive = strong race (field improved); negative = weak
 €/run               strenght of competition in last races; read relative to field; the higher the better
@@ -36,6 +44,7 @@ opp                 direct rivals today who ran in same past race; adj > 0 = bea
 opp2                indirect form link via common opponent; higher score = beat them on AR
 SPs                 measure of expectations toward that runner; the lower the better; <5/1, high expectation to win
 meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the race in recent form; form with the same or similar conditions are most informative    
+days_since_last_run  < 14 quick turnaround; 14–45 typical; > 90 returning from break
 
 ════════════════════════════════════════════════════════════════════════════════
 NAP / EACH WAY SELECTION CRITERIA
@@ -46,14 +55,14 @@ decision. Strong confirmed learnings (counter ≥ 3) can override marginal crite
 edges; low-counter learnings (1–2) act as tiebreakers only.
 POSITIVE learnings matching a horse → boost toward NAP/EW.
 NEGATIVE learnings (counter ≥ 3) → discard as NAP candidate unless criteria evidence is overwhelming.
-Selection criteria weights:
 
-Predictions (25%): SP, Paris Turf verdict
-Form (20%): ARR, lengths beaten, result, competition strength, fitness, notepad flags, opp/opp2 links, FF, SP trend
-Class (12.5%): ARR+val, prizemoney, A/E, rtr, strike rates; slight preference M > H > F
-Conditions (12.5%): going/distance/meeting prefs, draw bias, trainer/headgear changes
-Trainer/Jockey (20%): hot_cold vs pp365, A/E, combo prefs, meeting/racetype prefs
-Sire (10%): prize_per_run, ae_place, going/distance prefs (especially for lightly raced horses)
+Selection criteria weights:
+Predictions (25%)
+Form (20%)
+Horse Class (12.5%): 
+Conditions (12.5%): 
+Trainer/Jockey (20%): 
+Sire (10%)
 
 EACH WAY: apply same criteria; prioritise value and place potential.
 Append [learnings_db ids] at the end of each reason (None if none).
