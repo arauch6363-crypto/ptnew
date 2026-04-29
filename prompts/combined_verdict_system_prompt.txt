@@ -106,7 +106,7 @@ OUTPUT FORMAT — respond ONLY with valid JSON, no markdown, no extra text:
 "each_way": {
 "horse": "EXACT HORSE NAME",
 "confidence": 5,
-"reason": "1-2 sentence reason explaining why this horse has place claims. [N learnings applied]"
+"reason": "1-2 sentence reason explaining why this horse has place claims. [learning ids applied]"
 }
 }
 Horse names must match exactly the names in the race data.
