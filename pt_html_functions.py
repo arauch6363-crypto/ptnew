@@ -1003,13 +1003,136 @@ def _anthropic_create_with_retry(client, max_retries=3, **kwargs):
             _time.sleep(wait)
 
 
-def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnings=20):
+# ─────────────────────────────────────────────────────────────────────────────
+# Learning DB bucket helpers — used by generate_combined_verdict to score
+# per-race relevance from `category_counters` distributions.
+# ─────────────────────────────────────────────────────────────────────────────
+
+GOING_MAP = {
+    'Lourd': 'VERY SLOW', 'Très lourd': 'VERY SLOW', 'Collant': 'VERY SLOW',
+    'Souple': 'SLOW',     'Très souple': 'SLOW',
+    'Bon souple': 'FAST', 'Bon': 'FAST',
+    'Léger': 'VERY FAST', 'Bon léger': 'VERY FAST', 'Très léger': 'VERY FAST',
+    'PSF Standard': 'PSF', 'PSF Lente': 'PSF', 'PSF Rapide': 'PSF',
+}
+
+_LEARNING_BUCKET_SKELETON = {
+    'race_type':       [{'H': 0}, {'R': 0}, {'M': 0}, {'None': 0}],
+    'going_category':  [{'VERY SLOW': 0}, {'SLOW': 0}, {'FAST': 0}, {'VERY FAST': 0}, {'PSF': 0}],
+    'total_prize_eur': [{'0-10000': 0}, {'10001-20000': 0}, {'20001-30000': 0}, {'30001-55000': 0}, {'>55000': 0}],
+    'distance':        [{'0-1200': 0}, {'1201-1600': 0}, {'1601-2200': 0}, {'2201-2600': 0}, {'>2600': 0}],
+    'age_group':       [{'2yo': 0}, {'3yo': 0}, {'3yo+': 0}, {'4yo+': 0}],
+    'fieldsize':       [{'0-6': 0}, {'7-12': 0}, {'>12': 0}],
+}
+
+_GOING_WARNED = set()
+
+
+def _empty_category_counters():
+    """Fresh all-zero skeleton (deep copy so callers can mutate freely)."""
+    import copy as _copy
+    return _copy.deepcopy(_LEARNING_BUCKET_SKELETON)
+
+
+def _derive_age_group(race):
+    """All 2yo → '2yo'; all 3yo → '3yo'; mixed 3yo+older → '3yo+'; all ≥4 → '4yo+'."""
+    ages = [h.get('age') for h in race.get('horses', []) if h.get('age') is not None]
+    if not ages:
+        return None
+    mn, mx = min(ages), max(ages)
+    if mn == 2:             return '2yo'
+    if mn == 3 and mx == 3: return '3yo'
+    if mn == 3:             return '3yo+'
+    return '4yo+'
+
+
+def _bucketize_race(r):
+    """Pick the single matching bucket per category for race `r`.
+
+    Returns dict {category: bucket_label or None}. None means unknown — that
+    category contributes 0 to the relevance score for any learning.
+    """
+    def _bin(x, edges, labels):
+        if x is None:
+            return None
+        for e, l in zip(edges, labels):
+            if x <= e:
+                return l
+        return labels[-1]
+
+    going_raw = r.get('going_category')
+    going_bucket = GOING_MAP.get(going_raw)
+    if going_raw and not going_bucket and going_raw not in _GOING_WARNED:
+        _GOING_WARNED.add(going_raw)
+        print(f'  ⚠️  Unmapped going_category: {going_raw!r} — add to GOING_MAP')
+
+    return {
+        'race_type':       (r.get('race_type') or 'None'),
+        'going_category':  going_bucket,
+        'total_prize_eur': _bin(r.get('total_prize_eur'),
+                                [10000, 20000, 30000, 55000],
+                                ['0-10000', '10001-20000', '20001-30000', '30001-55000', '>55000']),
+        'distance':        _bin(r.get('distance_m'),
+                                [1200, 1600, 2200, 2600],
+                                ['0-1200', '1201-1600', '1601-2200', '2201-2600', '>2600']),
+        'age_group':       _derive_age_group(r),
+        'fieldsize':       _bin(r.get('field_size'),
+                                [6, 12],
+                                ['0-6', '7-12', '>12']),
+    }
+
+
+def _get_count(bucket_list, label):
+    """Walk list-of-single-key-dicts and return the int count for `label`, or 0."""
+    if not bucket_list or label is None:
+        return 0
+    for d in bucket_list:
+        if label in d:
+            try:
+                return int(d[label])
+            except (TypeError, ValueError):
+                return 0
+    return 0
+
+
+def _score_learning(learning, race_buckets):
+    """Sum bucket counts for each (category, bucket) match between learning and race."""
+    cc = learning.get('category_counters') or {}
+    total = 0
+    for cat, label in race_buckets.items():
+        if label is None:
+            continue
+        total += _get_count(cc.get(cat), label)
+    return total
+
+
+def _strip_counters(learning):
+    """Return a shallow copy of `learning` without the bulky `category_counters` field."""
+    return {k: v for k, v in learning.items() if k != 'category_counters'}
+
+
+def generate_combined_verdict(race_json, api_key, learnings_db=None,
+                              core_size=30, race_specific_size=10,
+                              max_learnings=None):
     """
     Single API call that returns the NAP/EW selection with 3-4 sentence reasons.
 
-    learnings_db entries are sorted by counter (desc) and the top max_learnings are
-    injected as a cached system-prompt block — so all races in one session share the
-    cached token cost (Anthropic ephemeral cache, 5-min TTL).
+    Learnings are split into two blocks:
+      • Block A — cached system block: top `core_size` learnings by `counter`,
+        mature only (counter >= 2 OR created > 7 days ago). Stable across all
+        races in a session, so the Anthropic ephemeral cache (5-min TTL)
+        preserves it from race 2 onward.
+      • Block B — uncached, appended to the user message: top
+        `race_specific_size` learnings by per-race relevance score (sum of
+        bucket counters in `category_counters` matching this race's
+        attributes). Excludes any IDs already in Block A and any with
+        score == 0.
+
+    Both blocks have `category_counters` stripped before rendering — the
+    verdict model never sees this scoring metadata.
+
+    `max_learnings` is accepted as a deprecated alias for `core_size` so
+    existing callers continue to work.
 
     Returns dict with:
       'nap'       — {horse, confidence, reason}
@@ -1019,6 +1142,10 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
     import anthropic as _anthropic
     import json as _json
     import re as _re
+    from datetime import date as _date, timedelta as _timedelta
+
+    if max_learnings is not None:
+        core_size = max_learnings
 
     client = _anthropic.Anthropic(api_key=api_key)
 
@@ -1030,12 +1157,26 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
             'cache_control': {'type': 'ephemeral'},
         }
     ]
+
+    block_a_ids = set()
+    block_b_entries = []  # list of (score, learning) — populated below
+
     if learnings_db:
+        _today_str = _date.today().strftime('%Y-%m-%d')
+        _probation_cutoff = (_date.today() - _timedelta(days=7)).strftime('%Y-%m-%d')
+
+        def _is_mature(_l):
+            return int(_l.get('counter', 1)) >= 2 or _l.get('created', _today_str) < _probation_cutoff
+
+        mature = [l for l in learnings_db if _is_mature(l)]
         top_learnings = sorted(
-            learnings_db, key=lambda x: x.get('counter', 0), reverse=True
-        )[:max_learnings]
+            mature,
+            key=lambda x: (-int(x.get('counter', 0)), x.get('id', '')),
+        )[:core_size]
+        block_a_ids = {l.get('id') for l in top_learnings if l.get('id')}
+
         lines = [
-            f'{i+1}. [n={e.get("counter",1)}, dir={e.get("direction","?")}, cat={e.get("category","?")}] {e.get("learning","")}'
+            f'{i+1}. [n={e.get("counter",1)}, dir={e.get("direction","?")}] {e.get("learning","")}'
             for i, e in enumerate(top_learnings)
         ]
         learnings_block = (
@@ -1048,13 +1189,37 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None, max_learnin
             'cache_control': {'type': 'ephemeral'},
         })
 
-    # ── User message — race data only (no learnings blob) ────────────────────
+        # ── Block B — race-specific scoring (NOT cached) ────────────────────
+        race_buckets = _bucketize_race(race_json)
+        scored = []
+        for _l in learnings_db:
+            if _l.get('id') in block_a_ids:
+                continue
+            _s = _score_learning(_l, race_buckets)
+            if _s > 0:
+                scored.append((_s, _l))
+        scored.sort(key=lambda t: (-t[0], t[1].get('id', '')))
+        block_b_entries = scored[:race_specific_size]
+
+    # ── User message — race data + Block B (uncached, race-specific) ─────────
     horse_names = [h['name'] for h in race_json.get('horses', [])]
-    user_msg = (
-        f'Select the NAP and EACH WAY for this race.\n'
-        f'Horses: {_json.dumps(horse_names)}\n\n'
-        f'Race data:\n{_json.dumps(race_json, indent=2, default=str)}'
-    )
+    user_msg_parts = [
+        f'Select the NAP and EACH WAY for this race.',
+        f'Horses: {_json.dumps(horse_names)}',
+        '',
+        f'Race data:\n{_json.dumps(race_json, indent=2, default=str)}',
+    ]
+    if block_b_entries:
+        _b_lines = [
+            f'{i+1}. [match_score={s}, n={e.get("counter",1)}, dir={e.get("direction","?")}] {e.get("learning","")}'
+            for i, (s, e) in enumerate(block_b_entries)
+        ]
+        user_msg_parts.append('')
+        user_msg_parts.append(
+            f'## Race-specific learnings (top {len(block_b_entries)} by bucket-match score)\n'
+            + '\n'.join(_b_lines)
+        )
+    user_msg = '\n'.join(user_msg_parts)
 
     _messages = [{'role': 'user', 'content': user_msg}]
 
