@@ -47,6 +47,8 @@ blinkers/hood    headgear worn by the horse; if null horse wore no headgear
 ── RECENT FORM (recent_form[]) ───────────────────────────────────────────────
 arr                 adjusted performance rating vs field; arr should be read relative to the field
 ff                  field form quality — positive = strong race (field improved); negative = weak
+pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners)
+lenghts_beaten      e.g. 2 = 2 lenghts behind winner
 €/run               strenght of competition in last races; read relative to field
 notepad=true        previously flagged unlucky or notably strong
 opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
@@ -71,6 +73,7 @@ RULES:
       GOOD: "Paris turf verdict favorites should be avoided when unfit (Last race older than 100 days)"
       BAD:  "Horse X won at Longchamp on 2026-04-23."
   — Use the full horse signal data to identify WHICH factors differentiated winners from losers.
+  — Consider 
   — Each learning must be generalised across races/days and directly actionable.
   — Assign: id (snake_case), direction (POSITIVE/NEGATIVE/NEUTRAL), counter=1.
   — Only emit learnings you are highly confident in. Aim for 0–3 per race — prefer zero over a weak learning.
