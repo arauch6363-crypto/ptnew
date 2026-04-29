@@ -32,22 +32,27 @@ prefs             trainer: Jockey / Owner / Meeting / RaceType
                   sire: Distance / Going / Age
 
 ── RECENT FORM (recent_form[]) ───────────────────────────────────────────────
-arr               adjusted race rating vs field (rising trend ≥ 3 runs = genuine improvement)
-ff                field form quality — positive = strong race (field improved); negative = weak
-notepad=true      previously flagged unlucky or notably strong; weight positively
-opp               direct rivals today who ran in same past race; adj > 0 = beat them on ARR
-opp2              indirect form link via common opponent; higher score = stronger bridge
+arr                 adjusted performance rating vs field; arr should be read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
+ff                  field form quality — positive = strong race (field improved); negative = weak
+€/run               strenght of competition in last races; read relative to field; the higher the better
+notepad=true        previously flagged unlucky or notably strong; weight positively
+opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
+opp2                indirect form link via common opponent; higher score = beat them on AR
+SPs                 measure of expectations toward that runner; the lower the better
+meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the race in recent form; form with the same or similar conditions are most informative              
 
 RULES:
   — Extract PATTERNS, not race-specific observations. Examples:
       GOOD: "Reclamer races are more likely to be won by Geldings rather than fillys or colts."
-      GOOD: Paris turf verdict favorites should be avoided when unfit (Last race older than 100 days)
+      GOOD: "A horse which posten more than 1 ARR higher than 2 than any of the competition should be considered a strong contender"
+      GOOD: "A horse which posted consistently high €/run in its recent runs and drops in class has genuine chance based on class"
+      GOOD: "Paris turf verdict favorites should be avoided when unfit (Last race older than 100 days)"
       BAD:  "Horse X won at Longchamp on 2026-04-23."
   — Use the full horse signal data to identify WHICH factors differentiated winners from losers.
   — Each learning must be generalised across races/days and directly actionable.
   — Assign: id (snake_case), direction (POSITIVE/NEGATIVE/NEUTRAL), counter=1.
   — Only emit learnings you are highly confident in. Aim for 0–3 per race — prefer zero over a weak learning.
-  — One clear sentence max per learning. No race-specific horse names.
+  — One clear to-the-point sentence max per learning. No race-specific horse names.
 
 CATEGORY COUNTERS — required on every emitted learning:
   Each learning carries a `category_counters` dict that records which race-attribute
