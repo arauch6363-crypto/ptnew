@@ -1147,7 +1147,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
     import anthropic as _anthropic
     import json as _json
     import re as _re
-    from datetime import date as _date, timedelta as _timedelta
+
 
     if max_learnings is not None:
         core_size = max_learnings
@@ -1167,15 +1167,8 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
     block_b_entries = []  # list of (score, learning) — populated below
 
     if learnings_db:
-        _today_str = _date.today().strftime('%Y-%m-%d')
-        _probation_cutoff = (_date.today() - _timedelta(days=7)).strftime('%Y-%m-%d')
-
-        def _is_mature(_l):
-            return int(_l.get('counter', 1)) >= 2 or _l.get('created', _today_str) < _probation_cutoff
-
-        mature = [l for l in learnings_db if _is_mature(l)]
         top_learnings = sorted(
-            mature,
+            learnings_db,
             key=lambda x: (-int(x.get('counter', 0)), x.get('id', '')),
         )[:core_size]
         block_a_ids = {l.get('id') for l in top_learnings if l.get('id')}
