@@ -12,6 +12,8 @@ ARR               max median and average ARR in recent form give a solid underta
 val               handicap edge; should be read relative to the field; the higher the better 
 rtr               elo-rating of the horse; should be read relative to the field; the higher the better 
 horse_stats       runs/wins/places, win_pct, place_pct, a/e_place, prize_per_run 
+horse_runs        <10 unexposed horse; potential improver; the more runs the more exposed is the horse
+age               <=3 unexposed horse; potential improver
 ae_place          > 1.0 outperforms market; < 0.9 underperforms
 sex               slight preference M > H > F
 
