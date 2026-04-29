@@ -6,8 +6,10 @@ ACTIONS — apply as needed:
   REFINE:     For each NEW entry (today's additions), first check whether any existing entry
               expresses the same or a closely related pattern. If so, MERGE or GENERALIZE the
               existing entry to incorporate the new evidence rather than keeping both.
-  MERGE:      Combine entries that express the same underlying pattern. Keep the id and counter
-              of the highest-counter entry; sum their counters. Preserve the OLDEST `created` date.
+  MERGE:      Combine entries that express the same underlying pattern. Keep the id of the
+              highest-counter entry; sum their `counter` AND element-wise-sum every bucket
+              inside `category_counters` (each category is a list of single-key dicts —
+              add the integers per matching label). Preserve the OLDEST `created` date.
   GENERALIZE: Rewrite overly narrow learnings into broader, applicable patterns without losing
               the core insight.
   CONDENSE:   Shorten verbose learning text to one clear, direct sentence.
@@ -21,13 +23,32 @@ RULES:
     of counter. Probation entries may still be MERGED into a stronger existing entry (in which case
     the merged result keeps the older `created` date and sums counters), but a standalone
     probation entry must be preserved so it has time to accumulate evidence.
-  — After curation aim for 30–50 mature high-quality learnings (counter >= 2 or older than 7 days);
-    probation entries are kept on top of this target and do not count against it.
+  — After curation aim for up to 100 mature high-quality learnings (counter >= 2 or older than 7
+    days); probation entries are kept on top of this target and do not count against it. The
+    target is a soft ceiling — it is fine to be slightly above 100 if all entries are distinct
+    and high quality.
   — Each output entry must have: id (snake_case), learning (one sentence), counter (int >= 1),
-    direction (POSITIVE / NEGATIVE / NEUTRAL), category
-    (trainer/jockey/going/draw/form/confidence/class/distance/sire/other),
+    direction (POSITIVE / NEGATIVE / NEUTRAL),
+    category_counters (dict with the canonical six categories and bucket labels — see schema below;
+    when merging, sum element-wise),
     created (YYYY-MM-DD, preserve from input; required), last_updated (YYYY-MM-DD).
+  — Canonical `category_counters` schema (use exactly these keys and labels):
+      race_type:       [{H}, {R}, {M}, {None}]
+      going_category:  [{VERY SLOW}, {SLOW}, {FAST}, {VERY FAST}, {PSF}]
+      total_prize_eur: [{0-10000}, {10001-20000}, {20001-30000}, {30001-55000}, {>55000}]
+      distance:        [{0-1200}, {1201-1600}, {1601-2200}, {2201-2600}, {>2600}]
+      age_group:       [{2yo}, {3yo}, {3yo+}, {4yo+}]
+      fieldsize:       [{0-6}, {7-12}, {>12}]
   — Sort output by counter descending, ties broken by `created` ascending (older first).
 
 OUTPUT FORMAT — valid JSON array only, no markdown, no commentary:
-[{"id": "...", "learning": "...", "counter": N, "direction": "POSITIVE", "category": "going", "created": "YYYY-MM-DD", "last_updated": "YYYY-MM-DD"}]
+[{"id": "...", "learning": "...", "counter": N, "direction": "POSITIVE",
+  "category_counters": {
+    "race_type":       [{"H": 0}, {"R": 0}, {"M": 0}, {"None": 0}],
+    "going_category":  [{"VERY SLOW": 0}, {"SLOW": 0}, {"FAST": 0}, {"VERY FAST": 0}, {"PSF": 0}],
+    "total_prize_eur": [{"0-10000": 0}, {"10001-20000": 0}, {"20001-30000": 0}, {"30001-55000": 0}, {">55000": 0}],
+    "distance":        [{"0-1200": 0}, {"1201-1600": 0}, {"1601-2200": 0}, {"2201-2600": 0}, {">2600": 0}],
+    "age_group":       [{"2yo": 0}, {"3yo": 0}, {"3yo+": 0}, {"4yo+": 0}],
+    "fieldsize":       [{"0-6": 0}, {"7-12": 0}, {">12": 0}]
+  },
+  "created": "YYYY-MM-DD", "last_updated": "YYYY-MM-DD"}]

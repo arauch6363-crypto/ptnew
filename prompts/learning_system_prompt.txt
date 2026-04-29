@@ -45,12 +45,42 @@ RULES:
       BAD:  "Horse X won at Longchamp on 2026-04-23."
   — Use the full horse signal data to identify WHICH factors differentiated winners from losers.
   — Each learning must be generalised across races/days and directly actionable.
-  - Only one short sentence for each learning. be as concise as possible
-  — Assign: id (snake_case), direction (POSITIVE/NEGATIVE/NEUTRAL),
-    category (trainer/jockey/going/draw/form/confidence/class/distance/sire/other), counter=1.
+  — Assign: id (snake_case), direction (POSITIVE/NEGATIVE/NEUTRAL), counter=1.
   — Only emit learnings you are highly confident in. Aim for 0–3 per race — prefer zero over a weak learning.
-  — Do NOT emit a learning if a closely similar pattern likely already exists in the DB; the curator will merge duplicates.
   — One clear sentence max per learning. No race-specific horse names.
 
-OUTPUT FORMAT — valid JSON array only, no markdown:
-[{"id": "snake_id", "learning": "Pattern.", "counter": 1, "direction": "POSITIVE", "category": "going"}]
+CATEGORY COUNTERS — required on every emitted learning:
+  Each learning carries a `category_counters` dict that records which race-attribute
+  buckets the learning was observed in. Start from this all-zero skeleton and
+  increment by 1 the SINGLE bucket per category that matches THIS race (the one
+  the learning was extracted from). Do not increment more than one bucket per
+  category. Leave a category fully zero if the matching value is unknown.
+
+  Use exactly these category names and bucket labels — no others:
+    race_type:       H, R, M, None        (use race.race_type; "None" if absent)
+    going_category:  VERY SLOW, SLOW, FAST, VERY FAST, PSF
+       Mapping (from race.going_category):
+         Lourd / Très lourd / Collant         → VERY SLOW
+         Souple / Très souple                 → SLOW
+         Bon souple / Bon                     → FAST
+         Léger / Bon léger / Très léger       → VERY FAST
+         PSF Standard / PSF Lente / PSF Rapide → PSF
+    total_prize_eur: 0-10000, 10001-20000, 20001-30000, 30001-55000, >55000
+    distance:        0-1200, 1201-1600, 1601-2200, 2201-2600, >2600   (metres)
+    age_group:       2yo, 3yo, 3yo+, 4yo+
+       Derived from horses[].age:
+         all 2yo → 2yo;  all 3yo → 3yo;  3yo + older mixed → 3yo+;  all ≥4 → 4yo+
+    fieldsize:       0-6, 7-12, >12
+
+OUTPUT FORMAT — valid JSON array only, no markdown. Example for a HANDICAP on
+SOUPLE going, prize 18000, distance 2000m, mixed 3yo+, fieldsize 9:
+
+[{"id": "snake_id", "learning": "Pattern.", "counter": 1, "direction": "POSITIVE",
+  "category_counters": {
+    "race_type":       [{"H": 1}, {"R": 0}, {"M": 0}, {"None": 0}],
+    "going_category":  [{"VERY SLOW": 0}, {"SLOW": 1}, {"FAST": 0}, {"VERY FAST": 0}, {"PSF": 0}],
+    "total_prize_eur": [{"0-10000": 0}, {"10001-20000": 1}, {"20001-30000": 0}, {"30001-55000": 0}, {">55000": 0}],
+    "distance":        [{"0-1200": 0}, {"1201-1600": 0}, {"1601-2200": 1}, {"2201-2600": 0}, {">2600": 0}],
+    "age_group":       [{"2yo": 0}, {"3yo": 0}, {"3yo+": 1}, {"4yo+": 0}],
+    "fieldsize":       [{"0-6": 0}, {"7-12": 1}, {">12": 0}]
+  }}]
