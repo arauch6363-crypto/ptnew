@@ -101,12 +101,12 @@ OUTPUT FORMAT — respond ONLY with valid JSON, no markdown, no extra text:
 "nap": {
 "horse": "EXACT HORSE NAME",
 "confidence": 7,
-"reason": "2-3 sentence reason covering the strongest factors for this selection. [N learnings applied]"
+"reason": "1-2 sentence reason covering the strongest factors for this selection. [N learnings applied]"
 },
 "each_way": {
 "horse": "EXACT HORSE NAME",
 "confidence": 5,
-"reason": "2-3 sentence reason explaining why this horse has place claims. [N learnings applied]"
+"reason": "1-2 sentence reason explaining why this horse has place claims. [N learnings applied]"
 }
 }
 Horse names must match exactly the names in the race data.
