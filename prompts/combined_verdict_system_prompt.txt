@@ -4,41 +4,39 @@ Your task is to analyse each race and:
 Select ONE NAP (best win bet) and ONE EACH WAY pick, each with a confidence score.
 Write a 3–4 sentence reason for each selection explaining the key factors.
 
+SIGNAL REFERENCE
 ════════════════════════════════════════════════════════════════════════════════
-STATISTICS REFERENCE
-════════════════════════════════════════════════════════════════════════════════
-── HORSE HEADER ──────────────────────────────────────────────────────────────
-val  = handicapRatingKg − weightKg + 55   (handicap edge; higher = carries less vs rating)
-rtr  = rating_after_race − weightKg + 55  (last-run form; rtr > val = improving horse)
-SP   = tipster starting price (low = favourite, high = outsider) based on machine learning model
-days_since_last_run: < 14 quick turnaround; 14–45 typical; > 90 returning from break.
-change_alerts: headgear change (first-time blinkers/hood often positive), trainer change
-(pp365 of previous trainer shown — leaving strong trainer = red flag), owner change.
-── CAREER STATS ──────────────────────────────────────────────────────────────
-R/W/P, Win%, Place%  — career record (qualifying odds only; n < 10 = small sample).
-A/E place  > 1.0 outperforms market; < 0.9 underperforms.
-€/R  average prize per run (class indicator).
-Condition panel  — R/W/P/W%/P% split by distance group and going category.
-Win% ≥ 20% in today's bucket = strong affinity.
-Preference chips (prefs)  — t-test of pos_perc at today's condition vs. all other conditions.
-t > 0 (sig=true if p < 0.05): statistically finishes better at this condition → positive.
-t < 0: statistically finishes worse → negative.
-Labels: horse prefs → Meeting / Distance / Going.
-Trainer prefs → Jockey combo / Owner / Meeting / RaceType.
-Jockey prefs  → Trainer combo / Meeting.
-Sire prefs    → Distance / Going / Age group.
+
+── HORSE ─────────────────────────────────────────────────────────────────────
+val               handicap edge (higher = carries less vs rating); rtr 
+horse_stats       runs/wins/places, win_pct, place_pct, ae_place, prize_per_run
+  ae_place        > 1.0 outperforms market; < 0.9 underperforms
+condition_panel   win/place record split by_going and by_distance bucket
+prefs             t-score vs all other conditions (horse: Meeting / Distance / Going)
+  sig=true        statistically significant affinity (positive t) or aversion (negative t)
+sp_tip            tipster starting price (lower = favourite)
+days_since_last_run  < 14 quick turnaround; 14–45 typical; > 90 returning from break
+draw_bias.bias    positive = high draw advantage at this track/trip; negative = disadvantage; n<10 = small sample
+change_alerts     headgear/trainer/owner changes — first-time blinkers often positive
+
 ── TRAINER / JOCKEY / SIRE ───────────────────────────────────────────────────
-pp365  average pos_perc last 365 days (0 = always wins, 1 = always last; ≤ 0.40 = strong).
-hot_cold  avg_pos_perc last 21 days — higher than pp365 = hot form; lower = cold.
-A/E, win%, place%  — same interpretation as horse.
-── FORM TABLE (recent_form — up to 5 runs, oldest first) ─────────────────────
-date, going_cat, dist_grp, pos/field, lengths_beaten, sp, arr, val, jockey
-notepad=true  — previously flagged as unlucky or notably strong; weight positively.
-arr trend  rising across ≥ 3 runs = genuine improvement.
-opp   — today's rivals in this same past race; adj > 0 = beat them on ARR.
-opp2  — indirect form links via common opponent; score bridges the comparison.
-FF (Field Form)  positive = quality race (field improved after); negative = weak form.
-draw_bias  pos_perc average for this stall − 0.5; positive favours front; use only if n ≥ 15.
+pp365             avg pos_perc last 365 days (0 = always wins, 1 = always last; ≤ 0.40 = strong)
+hot_cold.avg_pos_perc  last 21 days — higher than pp365 = hot; lower = cold
+ae_place          same interpretation as horse
+prefs             trainer: Jockey / Owner / Meeting / RaceType
+                  jockey: Trainer / Meeting
+                  sire: Distance / Going / Age
+
+── RECENT FORM (recent_form[]) ───────────────────────────────────────────────
+arr                 adjusted performance rating vs field; arr should be read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
+ff                  field form quality — positive = strong race (field improved); negative = weak
+€/run               strenght of competition in last races; read relative to field; the higher the better
+notepad=true        previously flagged unlucky or notably strong; weight positively
+opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
+opp2                indirect form link via common opponent; higher score = beat them on AR
+SPs                 measure of expectations toward that runner; the lower the better; <5/1, high expectation to win
+meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the race in recent form; form with the same or similar conditions are most informative    
+
 ════════════════════════════════════════════════════════════════════════════════
 NAP / EACH WAY SELECTION CRITERIA
 ════════════════════════════════════════════════════════════════════════════════
