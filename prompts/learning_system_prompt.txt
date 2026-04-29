@@ -12,19 +12,20 @@ SIGNAL REFERENCE
 ════════════════════════════════════════════════════════════════════════════════
 
 ── HORSE ─────────────────────────────────────────────────────────────────────
-val               handicap edge (higher = carries less vs rating); rtr > val = improving
+val               handicap rating; should be read relative to the field
+rtr               elo rating; should be read relative to the field
 horse_stats       runs/wins/places, win_pct, place_pct, ae_place, prize_per_run
-  ae_place        > 1.0 outperforms market; < 0.9 underperforms
+ae_place          > 1.0 outperforms market; < 0.9 underperforms
 condition_panel   win/place record split by_going and by_distance bucket
 prefs             t-score vs all other conditions (horse: Meeting / Distance / Going)
-  sig=true        statistically significant affinity (positive t) or aversion (negative t)
+sig=true          statistically significant affinity (positive t) or aversion (negative t)
 sp_tip            tipster starting price (lower = favourite)
 days_since_last_run  < 14 quick turnaround; 14–45 typical; > 90 returning from break
 draw_bias.bias    positive = high draw advantage at this track/trip; negative = disadvantage
 change_alerts     headgear/trainer/owner changes — first-time blinkers often positive
 
 ── TRAINER / JOCKEY / SIRE ───────────────────────────────────────────────────
-pp365             avg pos_perc last 365 days (0 = always wins, 1 = always last; ≤ 0.40 = strong)
+pp365             avg pos_perc last 365 days (0 = always wins, 1 = always last)
 hot_cold.avg_pos_perc  last 21 days — higher than pp365 = hot; lower = cold
 ae_place          same interpretation as horse
 prefs             trainer: Jockey / Owner / Meeting / RaceType
@@ -32,14 +33,14 @@ prefs             trainer: Jockey / Owner / Meeting / RaceType
                   sire: Distance / Going / Age
 
 ── RECENT FORM (recent_form[]) ───────────────────────────────────────────────
-arr                 adjusted performance rating vs field; arr should be read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
+arr                 adjusted performance rating vs field; arr should be read relative to the field
 ff                  field form quality — positive = strong race (field improved); negative = weak
-€/run               strenght of competition in last races; read relative to field; the higher the better
-notepad=true        previously flagged unlucky or notably strong; weight positively
+€/run               strenght of competition in last races; read relative to field
+notepad=true        previously flagged unlucky or notably strong
 opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
 opp2                indirect form link via common opponent; higher score = beat them on AR
-SPs                 measure of expectations toward that runner; the lower the better
-meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the race in recent form; form with the same or similar conditions are most informative              
+SPs                 measure of expectations toward that runner
+meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the race in recent form            
 
 RULES:
   — Extract PATTERNS, not race-specific observations. Examples:
