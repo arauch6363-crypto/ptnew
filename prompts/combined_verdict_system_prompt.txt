@@ -118,7 +118,9 @@ EW  → ...
 
 SELECTION RULES:
 NAP      → horse with highest raw_total; tiebreak by higher signal_norm.
-EACH WAY → horse with second-highest raw_total; tiebreak by higher signal_norm.
+EACH WAY → horse with highest learning_norm raw_total; tiebreak by higher signal_norm.
+
+
 Append [learnings_db ids used] at the end of each reason (None if none).
 ════════════════════════════════════════════════════════════════════════════════
 OUTPUT FORMAT — respond ONLY with valid JSON, no markdown, no extra text:
