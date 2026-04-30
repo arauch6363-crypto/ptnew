@@ -121,14 +121,13 @@ raw_total → confidence
 STEP 4 — SCRATCHPAD  (mandatory; stripped before final output)
 ════════════════════════════════════════════════════════════════════════════════
 Before writing the JSON, compute every runner inside <scratchpad> tags.
-Format one line per runner:
-[HORSE] sig_raw=X sig_norm=X l_units=X l_norm=X [veto/ambig/none] raw=X conf=N
-Then state:
-NAP      → horse with highest confidence
-EACH WAY → horse with second-highest confidence
-           (or highest-value horse if price gap > 3 pts)
+Keep it compact — one line per runner, no prose:
+[HORSE] s=X/50 l=X/50 raw=X conf=N
+Final two lines:
+NAP → [horse] conf=N
+EW  → [horse] conf=N
 <scratchpad>
-[your per-runner calculations here]
+[one line per runner]
 NAP → ...
 EW  → ...
 </scratchpad>

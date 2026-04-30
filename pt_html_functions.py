@@ -1221,7 +1221,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
 
     _messages = [{'role': 'user', 'content': user_msg}]
 
-    _max_tokens = 4096
+    _max_tokens = 16384
     resp = _anthropic_create_with_retry(
         client,
         model='claude-sonnet-4-6',
