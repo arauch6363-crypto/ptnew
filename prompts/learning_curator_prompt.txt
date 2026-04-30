@@ -20,9 +20,11 @@ ACTIONS — apply as needed:
 RULES:
   — Never discard confirmed signal: entries with counter >= 3 require strong justification to remove.
   — PROBATION: Never remove a learning whose `created` date is within 7 days of today, regardless
-    of counter. Probation entries may still be MERGED into a stronger existing entry (in which case
-    the merged result keeps the older `created` date and sums counters), but a standalone
-    probation entry must be preserved so it has time to accumulate evidence.
+    of counter. Probation entries MAY be MERGED with any other entry — including other probation
+    entries — when they express the same underlying pattern. The merged result keeps the oldest
+    `created` date, sums both `counter` and `category_counters` element-wise, and remains on
+    probation if either source was on probation. A standalone probation entry with no close match
+    must be preserved so it has time to accumulate evidence.
   — After curation aim for up to 100 mature high-quality learnings (counter >= 2 or older than 7
     days); probation entries are kept on top of this target and do not count against it. The
     target is a soft ceiling — it is fine to be slightly above 100 if all entries are distinct
