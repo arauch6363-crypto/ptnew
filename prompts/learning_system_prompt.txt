@@ -57,7 +57,7 @@ SPs                 measure of expectations toward that runner
 meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the race in recent form      
 
 ── TRAINER / JOCKEY / SIRE ───────────────────────────────────────────────────
-pp365             avg pos_perc last 365 days (0 = always wins, 1 = always last)
+pp365             avg pos_perc last 365 days (1 = always wins, 0 = always last)
 hot_cold.avg_pos_perc  last 21 days — higher than pp365 = hot; lower = cold
 ae_place          same interpretation as horse
 prefs             trainer: Jockey / Owner / Meeting / RaceType
