@@ -58,42 +58,58 @@ Signals and learnings each contribute exactly 50 points maximum to the raw total
 ════════════════════════════════════════════════════════════════════════════════
 STEP 1 — SIGNAL SCORE  (max +50 pts)
 ════════════════════════════════════════════════════════════════════════════════
-Score every signal category for each runner, then normalise:
-raw_signal = Σ (signal_score × weight / 3)
-signal_norm = (raw_signal / 50) × 50
-Signal          Wt   +3 (best)                    +1 (neutral)     −1 / −2 (worst)
+Score every signal category for each runner using the SIGNALS REFERENCE above,
+then normalise to 50 pts max:
+  raw_signal = Σ (signal_score × weight / 3)
+  signal_norm = (raw_signal / 50) × 50
+
+Signal           Wt   Score guide (use SIGNALS REFERENCE to assign)
 ────────────────────────────────────────────────────────────────────────────────
-Predictions     12             		  
-Form            11   
-Horse Class      9   
-Conditions       8   
-Trainer/Jockey   6   
-Sire             4   
+Predictions      12   +3 = sp_tip favourite AND paristurf endorsement
+                      +1 = one signal present or mixed
+                      −1 = sp_tip outsider AND paristurf silent/negative
+Form             11   +3 = rising ARR trend, recent win/place in same conditions, notepad+ff
+                      +1 = competitive form, no clear trend
+                      −1/−2 = declining ARR, poor recent runs, long break
+Horse Class       9   +3 = leads field on ARR + val + rtr combined
+                      +1 = mid-field on class metrics
+                      −1/−2 = clear class deficit vs field
+Conditions        8   +3 = sig=true affinity for going + distance + meeting
+                      +1 = partial match or neutral prefs
+                      −1/−2 = sig=true aversion, or clear mismatch
+Trainer/Jockey    6   +3 = both hot (hot_cold better than pp365) + sig positive prefs
+                      +1 = neutral or one signal positive
+                      −1/−2 = cold form, sig negative venue/going affinity
+Sire              4   +3 = sig=true affinity for today's distance + going (especially lightly raced)
+                      +1 = neutral sire prefs
+                      −1/−2 = sig=true sire aversion for today's conditions
+
+Weights sum to 50; max raw_signal = 50 (all +3) → signal_norm = 50.
 ════════════════════════════════════════════════════════════════════════════════
 STEP 2 — LEARNING SCORE  (max +50 pts)
 ════════════════════════════════════════════════════════════════════════════════
 2a. Assign units per applicable learning:
-Positive counter ≥ 3  → +1.0 unit  each
-Positive counter 1–2  → +0.27 unit each
-Negative counter ≥ 3  → −1.0 unit  each
-Negative counter 1–2  → −0.27 unit each
+  Positive counter ≥ 3  → +1.0 unit  each
+  Positive counter 1–2  → +0.27 unit each
+  Negative counter ≥ 3  → −1.0 unit  each
+  Negative counter 1–2  → −0.27 unit each
 2b. Sum all units → raw_units
 2c. Normalise with soft cap (diminishing returns):
-learning_norm = tanh(raw_units / 2) × 50
-Reference:
-±1 unit  → ±24 pts   |   ±3 units → ±45 pts
-±2 units → ±38 pts   |   ±5 units → ±49 pts
+  learning_norm = tanh(raw_units / 2) × 50
+  Reference:
+  ±1 unit  → ±24 pts   |   ±3 units → ±45 pts
+  ±2 units → ±38 pts   |   ±5 units → ±49 pts
 2d. SPECIFICITY VETO
-If any negative learning matches today's EXACT conditions
-(going + distance + race_type) with counter ≥ 3:
-→ Set learning_norm = −50 (hard floor)
-→ Positive learnings cannot lift this floor.
+  If any negative learning matches today's EXACT conditions
+  (going + distance + race_type) with counter ≥ 3:
+  → Set learning_norm = −50 (hard floor)
+  → Positive learnings cannot lift this floor.
 2e. AMBIGUOUS ZONE  (learning_norm between −15 and +15, multiple learnings present)
-Apply conflict resolution as tiebreaker:
-1. Specificity — exact conditions beats general
-2. Counter     — higher counter wins
-3. Negative bias — if equal, negative wins
-If a confirmed negative survives resolution → adjust learning_norm to −8.
+  Apply conflict resolution as tiebreaker:
+  1. Specificity — exact conditions beats general
+  2. Counter     — higher counter wins
+  3. Negative bias — if equal, negative wins
+  If a confirmed negative survives resolution → adjust learning_norm to −8.
 ════════════════════════════════════════════════════════════════════════════════
 STEP 3 — RAW TOTAL & CONFIDENCE
 ════════════════════════════════════════════════════════════════════════════════
@@ -102,21 +118,22 @@ raw_total → confidence
 ≥85 → 10  |  70–84 → 9  |  55–69 → 8  |  40–54 → 7  |  25–39 → 6
 10–24 → 5  |  0–9 → 4  |  −15–−1 → 3  |  −30–−16 → 2  |  <−30 → 1
 ════════════════════════════════════════════════════════════════════════════════
-STEP 4 — SCRATCHPAD  (mandatory; not included in final output)
+STEP 4 — SCRATCHPAD  (mandatory; stripped before final output)
 ════════════════════════════════════════════════════════════════════════════════
 Before writing the JSON, compute every runner inside <scratchpad> tags.
-The scratchpad is your working space — it is stripped before delivery.
-Format one line per runner:
-[HORSE] sig_raw=X sig_norm=X l_units=X l_norm=X [veto/ambig/none] raw=X conf=N
-Then state:
-NAP      → horse with highest confidence
-EACH WAY → horse with second-highest confidence
-(or highest-value horse if price gap > 3pts)
+Keep it compact — one line per runner, no prose:
+[HORSE] s=X/50 l=X/50 raw=X conf=N
+Final two lines:
+NAP → [horse] conf=N
+EW  → [horse] conf=N
 <scratchpad>
-[your per-runner calculations here]
+[one line per runner]
 NAP → ...
 EW  → ...
 </scratchpad>
+
+EACH WAY: apply same criteria; prioritise value.
+Append [learnings_db ids of learnings used] at the end of each reason (None if none).
 ════════════════════════════════════════════════════════════════════════════════
 NAP/EW REASON STYLE
 ════════════════════════════════════════════════════════════════════════════════
