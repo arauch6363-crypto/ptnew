@@ -3412,7 +3412,7 @@ def _render_runners_html(race_rows, runners_hist,
                                         'score': o2['score']}
                                        for o2 in (e.get('opp2') or [])],
                 }
-                for e in _ctx
+                for e in _ctx[-5:]
             ],
         })
 
