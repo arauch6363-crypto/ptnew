@@ -40,9 +40,12 @@ from pathlib import Path
 
 def _load_prompt(filename: str) -> str:
     """Load a system prompt — local prompts/ dir first, GitHub raw URL as fallback."""
-    local = Path(__file__).parent / 'prompts' / filename
-    if local.exists():
-        return local.read_text(encoding='utf-8')
+    try:
+        local = Path(__file__).parent / 'prompts' / filename
+        if local.exists():
+            return local.read_text(encoding='utf-8')
+    except NameError:
+        pass  # __file__ not defined when loaded via exec(compile(...))
     # Fallback: fetch from GitHub (Colab / any env where prompts/ isn't next to this file)
     import urllib.request as _urlreq
     _token = os.environ.get('GITHUB_TOKEN', '')
