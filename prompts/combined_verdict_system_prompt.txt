@@ -18,7 +18,7 @@ ae_place          > 1.0 outperforms market; < 0.9 underperforms
 sex               slight preference M > H > F
 
 ── TRAINER / JOCKEY / SIRE ───────────────────────────────────────────────────
-pp365             avg pos_perc last 365 days (0 = always wins, 1 = always last; > 0.5 = strong)
+pp365             avg pos_perc last 365 days (1 = always wins, 0 = always last; higher is better; > 0.5 = strong)
 hot_cold.avg_pos_perc  last 21 days — higher than pp365 = hot; lower = cold
 ae_place          same interpretation as horse
 prefs             trainer: Jockey / Owner / Meeting / RaceType
