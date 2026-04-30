@@ -1,8 +1,10 @@
 {
   "by_meeting": {
+    "Angers": "Bon souple",
     "Saint-Cloud": "Bon souple",
     "Bordeaux - Le Bouscat": "Bon souple",
     "Marseille-Borély": "Souple",
+    "Marseille-Vivaux": "PSF Standard",
     "Chantilly": "Souple",
     "Compiegne": "Bon souple",
     "Le Mans": "Bon souple",
@@ -13,6 +15,7 @@
     "La Teste": "Bon souple",
     "Lyon-Parilly": "Souple",
     "Strasbourg": "Souple",
+    "Dax": "Bon souple",
     "Fontainebleau": "Bon souple",
     "Le Lion-d'Angers": "Bon souple"
   },
