@@ -53,35 +53,88 @@ days_since_last_run  < 14 quick turnaround; 14–45 typical; > 90 returning from
 ════════════════════════════════════════════════════════════════════════════════
 NAP / EACH WAY SELECTION CRITERIA
 ════════════════════════════════════════════════════════════════════════════════
-Evaluate all runners simultaneously against both the signals and the
-learnings database in a single pass. Both carry equal weight (50/50) in the final
-decision. 
+Evaluate all runners using the four-step scoring procedure below.
+Signals and learnings each contribute exactly 50 points maximum to the raw total.
+════════════════════════════════════════════════════════════════════════════════
+STEP 1 — SIGNAL SCORE  (max +50 pts)
+════════════════════════════════════════════════════════════════════════════════
+Score every signal category for each runner using the SIGNALS REFERENCE above,
+then normalise to 50 pts max:
+  raw_signal = Σ (signal_score × weight / 3)
+  signal_norm = (raw_signal / 50) × 50
 
-SIGNALS (50% of total weight; refer to signal reference above)
-Distribution
-- Predictions (25%)
-- Form (20%)
-- Horse Class (12.5%): 
-- Conditions (12.5%): 
-- Trainer/Jockey (20%): 
-- Sire (10%)
+Signal           Wt   Score guide (use SIGNALS REFERENCE to assign)
+────────────────────────────────────────────────────────────────────────────────
+Predictions      12   +3 = sp_tip favourite AND paristurf endorsement
+                      +1 = one signal present or mixed
+                      −1 = sp_tip outsider AND paristurf silent/negative
+Form             11   +3 = rising ARR trend, recent win/place in same conditions, notepad+ff
+                      +1 = competitive form, no clear trend
+                      −1/−2 = declining ARR, poor recent runs, long break
+Horse Class       9   +3 = leads field on ARR + val + rtr combined
+                      +1 = mid-field on class metrics
+                      −1/−2 = clear class deficit vs field
+Conditions        8   +3 = sig=true affinity for going + distance + meeting
+                      +1 = partial match or neutral prefs
+                      −1/−2 = sig=true aversion, or clear mismatch
+Trainer/Jockey    6   +3 = both hot (hot_cold better than pp365) + sig positive prefs
+                      +1 = neutral or one signal positive
+                      −1/−2 = cold form, sig negative venue/going affinity
+Sire              4   +3 = sig=true affinity for today's distance + going (especially lightly raced)
+                      +1 = neutral sire prefs
+                      −1/−2 = sig=true sire aversion for today's conditions
 
-LEARNING DATABASE (weight 50%)
-- Strong confirmed learnings (counter ≥ 3) can override marginal criteria edges; low-counter learnings (1–2) act as tiebreakers only.
-- POSITIVE learnings matching a horse → boost toward NAP/EW.
-- NEGATIVE learnings (counter ≥ 3) → discard as NAP candidate unless criteria evidence is overwhelming.
-
+Weights sum to 50; max raw_signal = 50 (all +3) → signal_norm = 50.
+════════════════════════════════════════════════════════════════════════════════
+STEP 2 — LEARNING SCORE  (max +50 pts)
+════════════════════════════════════════════════════════════════════════════════
+2a. Assign units per applicable learning:
+  Positive counter ≥ 3  → +1.0 unit  each
+  Positive counter 1–2  → +0.27 unit each
+  Negative counter ≥ 3  → −1.0 unit  each
+  Negative counter 1–2  → −0.27 unit each
+2b. Sum all units → raw_units
+2c. Normalise with soft cap (diminishing returns):
+  learning_norm = tanh(raw_units / 2) × 50
+  Reference:
+  ±1 unit  → ±24 pts   |   ±3 units → ±45 pts
+  ±2 units → ±38 pts   |   ±5 units → ±49 pts
+2d. SPECIFICITY VETO
+  If any negative learning matches today's EXACT conditions
+  (going + distance + race_type) with counter ≥ 3:
+  → Set learning_norm = −50 (hard floor)
+  → Positive learnings cannot lift this floor.
+2e. AMBIGUOUS ZONE  (learning_norm between −15 and +15, multiple learnings present)
+  Apply conflict resolution as tiebreaker:
+  1. Specificity — exact conditions beats general
+  2. Counter     — higher counter wins
+  3. Negative bias — if equal, negative wins
+  If a confirmed negative survives resolution → adjust learning_norm to −8.
+════════════════════════════════════════════════════════════════════════════════
+STEP 3 — RAW TOTAL & CONFIDENCE
+════════════════════════════════════════════════════════════════════════════════
+raw_total = signal_norm + learning_norm
+raw_total → confidence
+≥85 → 10  |  70–84 → 9  |  55–69 → 8  |  40–54 → 7  |  25–39 → 6
+10–24 → 5  |  0–9 → 4  |  −15–−1 → 3  |  −30–−16 → 2  |  <−30 → 1
+════════════════════════════════════════════════════════════════════════════════
+STEP 4 — SCRATCHPAD  (mandatory; stripped before final output)
+════════════════════════════════════════════════════════════════════════════════
+Before writing the JSON, compute every runner inside <scratchpad> tags.
+Format one line per runner:
+[HORSE] sig_raw=X sig_norm=X l_units=X l_norm=X [veto/ambig/none] raw=X conf=N
+Then state:
+NAP      → horse with highest confidence
+EACH WAY → horse with second-highest confidence
+           (or highest-value horse if price gap > 3 pts)
+<scratchpad>
+[your per-runner calculations here]
+NAP → ...
+EW  → ...
+</scratchpad>
 
 EACH WAY: apply same criteria; prioritise value.
 Append [learnings_db ids of learnings used] at the end of each reason (None if none).
-════════════════════════════════════════════════════════════════════════════════
-CONFIDENCE SCORING (1–10)
-════════════════════════════════════════════════════════════════════════════════
-10: multiple high-counter (≥ 3) positive learnings + standard signals align
-8–9: 1–2 confirmed learnings, or 3–4 strong standard factors with no negatives
-6–7: partial learning signal, or 2–3 positive factors with minor concerns
-4–5: no clear learning; marginal edge, mixed signals
-1–3: speculative, or negative learning applies
 ════════════════════════════════════════════════════════════════════════════════
 NAP/EW REASON STYLE
 ════════════════════════════════════════════════════════════════════════════════
