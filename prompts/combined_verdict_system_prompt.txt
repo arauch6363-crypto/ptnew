@@ -36,6 +36,11 @@ change_alerts     headgear/trainer/owner changes — first-time blinkers often p
 ── Predictions ───────────────────────────────────────────────────
 sp_tip              tipster starting price (lower = favourite)
 paris_turf_verdict  verdict of public racing analyst journalist
+                    (prominent mention likely = short market price)
+
+── Learnings ─────────────────────────────────────────────────────
+market_edge         true = learning identifies horses that beat or miss their
+                    market price; weighted 1.5× in Step 2 learning score
 
 ── FORM (recent_form[]) ───────────────────────────────────────────────
 arr                 adjusted performance rating vs field; arr should be read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
@@ -73,10 +78,16 @@ Sire             4
 STEP 2 — LEARNING SCORE  (max +50 pts)
 ════════════════════════════════════════════════════════════════════════════════
 2a. Assign units per applicable learning:
-Positive counter ≥ 3  → +1.0 unit  each
-Positive counter 1–2  → +0.27 unit each
-Negative counter ≥ 3  → −1.0 unit  each
-Negative counter 1–2  → −0.27 unit each
+Positive counter ≥ 3                      → +1.0 unit  each
+Positive counter ≥ 3  + market_edge=true  → +1.5 unit  each
+Positive counter 1–2                      → +0.27 unit each
+Positive counter 1–2  + market_edge=true  → +0.40 unit each
+Negative counter ≥ 3                      → −1.0 unit  each
+Negative counter ≥ 3  + market_edge=true  → −1.5 unit  each
+Negative counter 1–2                      → −0.27 unit each
+Negative counter 1–2  + market_edge=true  → −0.40 unit each
+market_edge learnings identify systematic over/underperformance vs market price;
+they carry 1.5× weight because they represent genuine edge beyond market knowledge.
 2b. Sum all units → raw_units
 2c. Normalise with soft cap (diminishing returns):
 learning_norm = tanh(raw_units / 2) × 50

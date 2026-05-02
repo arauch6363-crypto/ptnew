@@ -63,7 +63,33 @@ ae_place          same interpretation as horse
 prefs             trainer: Jockey / Owner / Meeting / RaceType
                   jockey: Trainer / Meeting
                   sire: Distance / Going / Age
-      
+
+── MARKET CONTEXT ────────────────────────────────────────────────────────────
+live_odd              morning market odds for each horse (lower = more fancied)
+market_rank           1 = favourite; higher = bigger outsider
+result.winner_live_odd      market odds of the actual winner
+result.winner_market_rank   market rank of the winner (1 = market got it right)
+result.winner_implied_prob  market's implied win probability for the winner
+result.nap_live_odd / result.ew_live_odd      market odds of our selections
+result.nap_market_rank / result.ew_market_rank  market rank of our selections
+
+════════════════════════════════════════════════════════════════════════════════
+MARKET EDGE FOCUS
+════════════════════════════════════════════════════════════════════════════════
+Learnings that identify when the market is WRONG are the most valuable.
+Prioritise patterns where:
+  • result.winner_live_odd > 5 — market underestimated the winner; find WHY
+  • result.winner_market_rank > 3 — winner was not among the top-3 fancied
+  • NAP/EW outperformed their market_rank — our signals beat the market
+Also extract NEGATIVE patterns where a short-priced favourite
+(market_rank=1, live_odd < 3) lost — what signals indicated the risk?
+
+Avoid learnings that merely describe market favourites winning as expected
+(winner_market_rank=1, live_odd < 3) — these carry no edge over the market.
+
+Set market_edge: true when the learning describes horses that systematically
+outperform OR underperform their market price. Set market_edge: false for
+general patterns that apply regardless of market position.
 
 RULES:
   — Extract PATTERNS, not race-specific observations. Examples:
@@ -100,7 +126,7 @@ CATEGORY COUNTERS — required on every emitted learning:
 OUTPUT FORMAT — valid JSON array only, no markdown. Example for a HANDICAP on
 SOUPLE going, prize 18000, distance 2000m, mixed 3yo+, fieldsize 9:
 
-[{"id": "snake_id", "learning": "Pattern.", "counter": 1, "direction": "POSITIVE",
+[{"id": "snake_id", "learning": "Pattern.", "counter": 1, "direction": "POSITIVE", "market_edge": false,
   "category_counters": {
     "race_type":       [{"H": 1}, {"R": 0}, {"M": 0}, {"None": 0}],
     "going_category":  [{"VERY SLOW": 0}, {"SLOW": 1}, {"FAST": 0}, {"VERY FAST": 0}, {"PSF": 0}],
