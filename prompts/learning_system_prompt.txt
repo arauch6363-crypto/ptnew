@@ -3,7 +3,7 @@ You are an expert horse racing data analyst.
 You receive the complete race verdict JSONs for yesterday's races. Each entry contains:
   — Full horse-level data: See Signal reference
   — The AI tipster's NAP and Each Way selections with confidence
-  — The actual result: what the NAP/EW selections achieved, actual P&L, and the true winner
+  — The actual result: placed horses with their saddle numbers and place dividends
 
 Your task: extract generalised, actionable learnings that will improve future selections.For each learning, verify it holds for the winner and/or placed horses AND that it did NOT hold for the majority of losers
 
@@ -65,7 +65,29 @@ ae_place          same interpretation as horse
 prefs             trainer: Jockey / Owner / Meeting / RaceType
                   jockey: Trainer / Meeting
                   sire: Distance / Going / Age
-      
+
+── RESULT (result{}) ────────────────────────────────────────────────────────
+saddle_1          saddle number of the 1st placed horse (= winner)
+plc_dividend_1    place payout for the winner (pari-mutuel, base stake 1)
+saddle_2          saddle number of the 2nd placed horse
+plc_dividend_2    place payout for 2nd place
+saddle_3          saddle number of the 3rd placed horse (null if only 2 paid)
+plc_dividend_3    place payout for 3rd place (null if only 2 paid)
+
+════════════════════════════════════════════════════════════════════════════════
+MARKET EDGE FOCUS
+════════════════════════════════════════════════════════════════════════════════
+Learnings that identify when the market is WRONG are the most valuable.
+Prioritise patterns where:
+  • result.plc_dividend_1/2/3 > 2 — market underestimated the winner and placed
+    horses; find WHY the signals pointed there when the market did not
+
+Avoid learnings that merely describe market favourites winning or being placed
+as expected (result.plc_dividend < 2) — these carry no edge over the market.
+
+Set market_edge: true when the learning describes horses that systematically
+outperform OR underperform their market price. Set market_edge: false for
+general patterns that apply regardless of market position.
 
 RULES:
   — Extract PATTERNS, not race-specific observations. Examples:
@@ -77,7 +99,7 @@ RULES:
   — Use the full horse signal data to identify WHICH factors differentiated winners from losers.
   — Consider equally form, race, predictions, horse, trainer/sire/jockey and prediction signals
   — Each learning must be generalised across races/days and directly actionable.
-  — Assign: id (snake_case), direction (POSITIVE/NEGATIVE/NEUTRAL), counter=1.
+  — Assign: id (snake_case), direction (POSITIVE/NEGATIVE/NEUTRAL), counter=1, market_edge (true/false).
   — Only emit learnings you are highly confident in. Aim for 0–3 per race — prefer zero over a weak learning.
   — One clear to-the-point sentence max per learning. No race-specific horse names.
 
@@ -102,7 +124,7 @@ CATEGORY COUNTERS — required on every emitted learning:
 OUTPUT FORMAT — valid JSON array only, no markdown. Example for a HANDICAP on
 SOUPLE going, prize 18000, distance 2000m, mixed 3yo+, fieldsize 9:
 
-[{"id": "snake_id", "learning": "Pattern.", "counter": 1, "direction": "POSITIVE",
+[{"id": "snake_id", "learning": "Pattern.", "counter": 1, "direction": "POSITIVE", "market_edge": false,
   "category_counters": {
     "race_type":       [{"H": 1}, {"R": 0}, {"M": 0}, {"None": 0}],
     "going_category":  [{"VERY SLOW": 0}, {"SLOW": 1}, {"FAST": 0}, {"VERY FAST": 0}, {"PSF": 0}],
