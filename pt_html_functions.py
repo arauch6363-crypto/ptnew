@@ -1177,7 +1177,9 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
         block_a_ids = {l.get('id') for l in top_learnings if l.get('id')}
 
         lines = [
-            f'{i+1}. [n={e.get("counter",1)}, dir={e.get("direction","?")}] {e.get("learning","")}'
+            f'{i+1}. [n={e.get("counter",1)}, dir={e.get("direction","?")}'
+            + (', edge=✓' if e.get('market_edge') else '')
+            + f'] {e.get("learning","")}'
             for i, e in enumerate(top_learnings)
         ]
         learnings_block = (
