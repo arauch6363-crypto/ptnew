@@ -16,7 +16,7 @@ rtr               elo-rating of the horse; should be read relative to the field;
 horse_stats       runs/wins/places, win_pct, place_pct, a/e_place, prize_per_run (€ rounded to integer)
 horse_runs        <10 unexposed horse; potential improver; the more runs the more exposed is the horse
 age               <=3 unexposed horse; potential improver
-ae_place          > 1.0 outperforms market; < 0.9 underperforms
+ae_place          > 1.0 outperforms market; < 0.9 underperforms (consider sample size)
 sex               slight preference M > H > F
 
 ── TRAINER / JOCKEY / SIRE ───────────────────────────────────────────────────
@@ -43,8 +43,8 @@ paris_turf_verdict  verdict of public racing analyst journalist
 arr                 adjusted performance rating vs field; arr should be read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
 pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners); pos in the top half can be considered competetive
 lenghts_beaten      e.g. 2 = 2 lenghts behind winner; <6 lenghts behind can be considered competetive
-ff                  field form quality — positive = strong race (field improved); negative = weak
-€/run               strenght of competition in last races; read relative to field; the higher the better
+ff                  field form quality — positive = strong race (field improved); negative = weak (consider sample size)
+avg_pm              strenght of competition in last races; read relative to field; the higher the better
 notepad=true        previously flagged unlucky or notably strong; weight positively
 opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
 opp2                indirect form link via common opponent; higher score = beat them on AR
