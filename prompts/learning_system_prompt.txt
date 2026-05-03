@@ -33,7 +33,7 @@ runs/wins/places  number or runs, wins and places in horse career
 win_pct           number of wins divided by number of runs 
 place_pct         number of places (first 3) divided by number of run
 prize_per_run     average prizemoney earney per run
-ae_place          > 1.0 outperforms market; < 0.9 underperforms
+ae_place          > 1.0 outperforms market; < 0.9 underperforms (consider sample size)
 condition_panel   win/place record split by_going and by_distance bucket
 prefs             t-score vs all other conditions (horse: Meeting / Distance / Going)
 sig=true          statistically significant affinity (positive t) or aversion (negative t)
@@ -48,10 +48,10 @@ blinkers/hood    headgear worn by the horse; if null horse wore no headgear
 
 ── RECENT FORM (recent_form[]) ───────────────────────────────────────────────
 arr                 adjusted performance rating vs field; arr should be read relative to the field
-ff                  field form quality — positive = strong race (field improved); negative = weak
+ff                  field form quality — positive = strong race (field improved); negative = weak (consider sample size)
 pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners)
 lenghts_beaten      e.g. 2 = 2 lenghts behind winner
-€/run               strenght of competition in last races; read relative to field
+avg_pm              strenght of competition in last races; read relative to field
 notepad=true        previously flagged unlucky or notably strong
 opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
 opp2                indirect form link via common opponent; higher score = beat them on AR
