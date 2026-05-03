@@ -35,6 +35,10 @@ sig=true          statistically significant affinity (positive t) or aversion (n
 draw_bias.bias    positive = high draw advantage at this track/trip; negative = disadvantage; n<10 = small sample
 change_alerts     headgear/trainer/owner changes — first-time blinkers often positive
 
+── LEARNINGS ────────────────────────────────────────────────────────────────
+market_edge  true = learning identifies horses that systematically beat or miss
+             their market price; weighted 1.5× in learning score (Step 2a)
+
 ── Predictions ───────────────────────────────────────────────────
 sp_tip              tipster starting price (lower = favourite)
 paris_turf_verdict  verdict of public racing analyst journalist
@@ -75,10 +79,14 @@ Sire             4
 STEP 2 — LEARNING SCORE  (max +50 pts)
 ════════════════════════════════════════════════════════════════════════════════
 2a. Assign units per applicable learning:
-Positive counter ≥ 3  → +1.0 unit  each
-Positive counter 1–2  → +0.27 unit each
-Negative counter ≥ 3  → −1.0 unit  each
-Negative counter 1–2  → −0.27 unit each
+Positive counter ≥ 3                      → +1.0  unit each
+Positive counter ≥ 3  + market_edge=true  → +1.5  unit each
+Positive counter 1–2                      → +0.27 unit each
+Positive counter 1–2  + market_edge=true  → +0.40 unit each
+Negative counter ≥ 3                      → −1.0  unit each
+Negative counter ≥ 3  + market_edge=true  → −1.5  unit each
+Negative counter 1–2                      → −0.27 unit each
+Negative counter 1–2  + market_edge=true  → −0.40 unit each
 2b. Sum all units → raw_units
 2c. Normalise with soft cap (diminishing returns):
 learning_norm = tanh(raw_units / 2) × 50
