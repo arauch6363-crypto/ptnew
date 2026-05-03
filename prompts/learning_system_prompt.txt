@@ -83,10 +83,10 @@ Prioritise patterns where:
     horses; find WHY the signals pointed there when the market did not
 
 Avoid learnings that merely describe market favourites winning or being placed
-as expected (result.plc_dividend < 2) — these carry no edge over the market.
+as expected (result.plc_dividend < 2) — these carry little edge over the market.
 
 Set market_edge: true when the learning describes horses that systematically
-outperform OR underperform their market price. Set market_edge: false for
+outperform their market price. Set market_edge: false for
 general patterns that apply regardless of market position.
 
 RULES:
