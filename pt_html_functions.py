@@ -3343,7 +3343,7 @@ def _render_runners_html(race_rows, runners_hist,
                 'win_pct':       round(100 * st['wins']   / r2, 1) if r2 else 0,
                 'place_pct':     round(100 * st['places'] / r2, 1) if r2 else 0,
                 'ae_place':      st.get('ae_place'),
-                'prize_per_run': st.get('prizemoney'),
+                'prize_per_run': (round(st['prizemoney']) if st.get('prizemoney') is not None else None),
             }
         if 'saddle' in r.index and pd.notna(r.get('saddle')):
             _saddle_raw = r['saddle']
@@ -3363,6 +3363,10 @@ def _render_runners_html(race_rows, runners_hist,
             'weight_kg':            (float(wt_raw) if wt_raw is not None and pd.notna(wt_raw) else None),
             'val':                  adj_val_float,
             'rtr':                  rtr_adj_float,
+            'arr_med':              (round(float(np.median([e['arr_raw'] for e in _ctx[-5:] if e.get('arr_raw') is not None])), 2)
+                                    if any(e.get('arr_raw') is not None for e in _ctx[-5:]) else None),
+            'arr_max':              (round(float(max(e['arr_raw'] for e in _ctx[-5:] if e.get('arr_raw') is not None)), 2)
+                                    if any(e.get('arr_raw') is not None for e in _ctx[-5:]) else None),
             'days_since_last_run':  horse_last_start.get(hid),
             'going_category_today': horse_going_grp,
             'distance_group_today': horse_dist_grp,
@@ -3407,7 +3411,7 @@ def _render_runners_html(race_rows, runners_hist,
                     'class':          e.get('race_class'),
                     'type':           e.get('race_type'),
                     'opp':            [{'name': n, 'adj': a} for n, a in e.get('opp', [])],
-                    'avg_pm':         e.get('avg_pm_raw'),
+                    'avg_pm':         (round(e['avg_pm_raw']) if e.get('avg_pm_raw') is not None else None),
                     'opp2':           [{'b_name': o2['b_name'], 'x_name': o2['x_name'],
                                         'score': o2['score']}
                                        for o2 in (e.get('opp2') or [])],
