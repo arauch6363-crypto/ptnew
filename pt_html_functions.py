@@ -1241,14 +1241,15 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
 
     if resp.stop_reason == 'max_tokens':
         _max_tokens *= 2
-        print(f'  ⏳ "{_race_label}" truncated — retrying with max_tokens={_max_tokens} ...')
-        resp = _anthropic_create_with_retry(
-            client,
+        print(f'  ⏳ "{_race_label}" truncated — retrying with max_tokens={_max_tokens} (streaming) ...')
+        import anthropic as _anthropic_mod
+        with client.messages.stream(
             model='claude-sonnet-4-6',
             max_tokens=_max_tokens,
             system=system_blocks,
             messages=_messages,
-        )
+        ) as _stream:
+            resp = _stream.get_final_message()
 
     _cache_read = getattr(resp.usage, 'cache_read_input_tokens', 0) or 0
     _cache_created = getattr(resp.usage, 'cache_creation_input_tokens', 0) or 0
@@ -1263,18 +1264,34 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
             f'out={resp.usage.output_tokens}) — increase max_tokens'
         )
 
-    text = resp.content[0].text.strip()
-    text = _re.sub(r'^```(?:json)?\s*', '', text)
-    text = _re.sub(r'\s*```$', '', text)
-    match = _re.search(r'\{[\s\S]*\}', text)
-    if match:
-        try:
-            result = _json.loads(match.group())
-            if 'nap' in result and 'each_way' in result:
-                return result
-        except _json.JSONDecodeError:
-            pass
-    return {}
+    def _parse_verdict(r):
+        text = r.content[0].text.strip()
+        text = _re.sub(r'^```(?:json)?\s*', '', text)
+        text = _re.sub(r'\s*```$', '', text)
+        m = _re.search(r'\{[\s\S]*\}', text)
+        if m:
+            try:
+                result = _json.loads(m.group())
+                if 'nap' in result and 'each_way' in result:
+                    return result
+            except _json.JSONDecodeError:
+                pass
+        return None
+
+    parsed = _parse_verdict(resp)
+    if parsed is not None:
+        return parsed
+
+    # One retry on empty/unparseable response
+    print(f'  ⏳ "{_race_label}" empty response — retrying ...')
+    resp = _anthropic_create_with_retry(
+        client,
+        model='claude-sonnet-4-6',
+        max_tokens=_max_tokens,
+        system=system_blocks,
+        messages=_messages,
+    )
+    return _parse_verdict(resp) or {}
 
 
 def _render_race_verdict_html(verdict):
