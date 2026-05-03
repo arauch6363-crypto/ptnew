@@ -93,7 +93,7 @@ RULES:
   — Extract PATTERNS, not race-specific observations. Examples:
       GOOD: "Reclamer races are more likely to be won by Geldings rather than fillys or colts."
       GOOD: "A horse which posten more than 1 form with ARR higher than 2kg than any of the competition should be considered a strong NAP candidate"
-      GOOD: "A horse which posted consistently high €/run in its recent runs and drops in class has genuine chance based on class"
+      GOOD: "A horse which posted consistently high avg_pm in its recent runs and drops in class has genuine chance based on class"
       GOOD: "Paris turf verdict favorites should be avoided when unfit (Last race older than 100 days)"
       BAD:  "Horse X won at Longchamp on 2026-04-23."
   — Use the full horse signal data to identify WHICH factors differentiated winners from losers.
