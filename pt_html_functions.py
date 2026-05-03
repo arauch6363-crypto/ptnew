@@ -1214,7 +1214,9 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
     ]
     if block_b_entries:
         _b_lines = [
-            f'{i+1}. [match_score={s}, n={e.get("counter",1)}, dir={e.get("direction","?")}] {e.get("learning","")}'
+            f'{i+1}. [match_score={s}, n={e.get("counter",1)}, dir={e.get("direction","?")}'
+            + (', edge=✓' if e.get('market_edge') else '')
+            + f'] {e.get("learning","")}'
             for i, (s, e) in enumerate(block_b_entries)
         ]
         user_msg_parts.append('')
