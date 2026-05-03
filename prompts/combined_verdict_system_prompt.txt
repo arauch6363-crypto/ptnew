@@ -8,10 +8,12 @@ SIGNALS REFERENCE
 ════════════════════════════════════════════════════════════════════════════════
 
 ── HORSE CLASS ─────────────────────────────────────────────────────────────────────
-ARR               max median and average ARR in recent form give a solid undertanding of horse class; should be read relative to the field; the higher the better 
-val               handicap edge; should be read relative to the field; the higher the better 
-rtr               elo-rating of the horse; should be read relative to the field; the higher the better 
-horse_stats       runs/wins/places, win_pct, place_pct, a/e_place, prize_per_run 
+ARR               max median and average ARR in recent form give a solid understanding of horse class; should be read relative to the field; the higher the better
+arr_med           median adjusted performance rating across last 5 runs; stable class indicator
+arr_max           peak adjusted performance rating across last 5 runs; ceiling class indicator
+val               handicap edge; should be read relative to the field; the higher the better
+rtr               elo-rating of the horse; should be read relative to the field; the higher the better
+horse_stats       runs/wins/places, win_pct, place_pct, a/e_place, prize_per_run (€ rounded to integer)
 horse_runs        <10 unexposed horse; potential improver; the more runs the more exposed is the horse
 age               <=3 unexposed horse; potential improver
 ae_place          > 1.0 outperforms market; < 0.9 underperforms
