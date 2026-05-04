@@ -5,7 +5,7 @@
     "Bordeaux - Le Bouscat": "Bon souple",
     "Marseille-Borély": "Souple",
     "Marseille-Vivaux": "PSF Standard",
-    "Chantilly": "Souple",
+    "Chantilly": "Bon souple",
     "Compiegne": "Bon souple",
     "Le Mans": "Bon souple",
     "Évreux": "Souple",
@@ -20,9 +20,9 @@
     "Le Lion-d'Angers": "Bon souple"
   },
   "by_race_name": {
-    "Prix Chantilly Capitale du Cheval": "PSF Standard",
-    "Prix de l'Arrondissement de Beauvais": "PSF Standard",
-    "Prix de l'Arrondissement de Senlis": "PSF Standard",
+    "Prix de Barbery": "PSF Standard",
+    "Prix de Borest": "PSF Standard",
+    "Prix de Baron": "PSF Standard",
     "Prix du Canal Saint-Jean": "PSF Standard",
     "Prix du Canal des Druides": "PSF Standard"
   }
