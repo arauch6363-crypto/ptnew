@@ -7,10 +7,6 @@ Write ONE sentence (1–2 lines max) per selection covering the key factor.
 SIGNALS REFERENCE
 ════════════════════════════════════════════════════════════════════════════════
 
-── LEARNINGS ────────────────────────────────────────────────────────────────
-market_edge  true = learning identifies horses that systematically beat or miss
-             their market price; weighted 1.5× in learning score (Step 2a)
-
 ── Predictions ───────────────────────────────────────────────────
 sp_tip              tipster starting price (lower = favourite)
 paris_turf_verdict  verdict of public racing analyst journalist
@@ -55,6 +51,10 @@ prefs             trainer: Jockey / Owner / Meeting / RaceType
                   jockey: Trainer / Meeting
                   sire: Distance / Going / Age
 Sire stats and prefs especially for lightly raced horses
+
+── LEARNINGS ────────────────────────────────────────────────────────────────
+market_edge  true = learning identifies horses that systematically beat or miss
+             their market price; weighted 1.5× in learning score (Step 2a)
 
 ════════════════════════════════════════════════════════════════════════════════
 NAP / EACH WAY SELECTION CRITERIA
