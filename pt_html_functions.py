@@ -3384,10 +3384,10 @@ def _render_runners_html(race_rows, runners_hist,
             'weight_kg':            (float(wt_raw) if wt_raw is not None and pd.notna(wt_raw) else None),
             'val':                  adj_val_float,
             'rtr':                  rtr_adj_float,
-            'arr_med':              (round(float(np.median([e['arr_raw'] for e in _ctx[-5:] if e.get('arr_raw') is not None])), 2)
-                                    if any(e.get('arr_raw') is not None for e in _ctx[-5:]) else None),
-            'arr_max':              (round(float(max(e['arr_raw'] for e in _ctx[-5:] if e.get('arr_raw') is not None)), 2)
-                                    if any(e.get('arr_raw') is not None for e in _ctx[-5:]) else None),
+            'arr_med':              (round(float(np.median([e['arr_raw'] for e in _ctx[:5] if e.get('arr_raw') is not None])), 2)
+                                    if any(e.get('arr_raw') is not None for e in _ctx[:5]) else None),
+            'arr_max':              (round(float(max(e['arr_raw'] for e in _ctx[:5] if e.get('arr_raw') is not None)), 2)
+                                    if any(e.get('arr_raw') is not None for e in _ctx[:5]) else None),
             'days_since_last_run':  horse_last_start.get(hid),
             'going_category_today': horse_going_grp,
             'distance_group_today': horse_dist_grp,
@@ -3437,7 +3437,7 @@ def _render_runners_html(race_rows, runners_hist,
                                         'score': o2['score']}
                                        for o2 in (e.get('opp2') or [])],
                 }
-                for e in _ctx[-5:]
+                for e in _ctx[:5]
             ],
         })
 
