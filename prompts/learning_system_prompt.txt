@@ -31,7 +31,7 @@ runs/wins/places  number or runs, wins and places in horse career
 win_pct           number of wins divided by number of runs 
 place_pct         number of places (first 3) divided by number of run
 prize_per_run     average prizemoney earney per run
-ae_place          > 1.0 outperforms market; < 0.9 underperforms (consider sample size)
+ae_place          > 1.0 outperforms market; < 0.9 underperforms (consider sample size); Always check the underlying runs sample — ae_place on fewer than 20 runs is unreliable.
 condition_panel   win/place record split by_going and by_distance bucket
 prefs             t-score vs all other conditions (horse: Meeting / Distance / Going)
 sig=true          statistically significant affinity (positive t) or aversion (negative t)
