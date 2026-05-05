@@ -19,7 +19,7 @@ ff                  field form quality — positive = strong race (field improve
 avg_pm              average prize-per-run of all runners in that past race, serving as a proxy for field quality. A high arr posted in a low avg_pm race carries less weight than the same arr against a high avg_pm field
 notepad=true        previously flagged unlucky or notably strong; weight positively
 opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
-opp2                indirect form link via common opponent; higher score = beat them on AR
+opp2                indirect form link via common opponent; higher score = beat them on ARR; treat as directional signal only, not a precise margin.
 SPs                 measure of expectations toward that runner; the lower the better; <5/1, high expectation to win
 meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the race in recent form; form with the same or similar conditions are most informative    
 days_since_last_run  < 14 quick turnaround (high Fitness Level); 14–45 typical (normal fitness level); > 90 returning from break (questionable fitness Level)
