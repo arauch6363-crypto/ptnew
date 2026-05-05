@@ -12,7 +12,7 @@ sp_tip              tipster starting price (lower = favourite)
 paris_turf_verdict  verdict of public racing analyst journalist
 
 ── FORM (recent_form[]) ───────────────────────────────────────────────
-arr                 adjusted performance rating vs field; arr should be read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
+arr                 adjusted performance rating vs field; Always compare within the specific race field, not in absolute terms ; rising trend ≥ 3 runs = genuine improvement
 pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners); pos in the top half can be considered competetive
 lenghts_beaten      e.g. 2 = 2 lenghts behind winner; <6 lenghts behind can be considered competetive
 ff                  field form quality — positive = strong race (field improved); negative = weak (consider sample size)
