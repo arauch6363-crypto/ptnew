@@ -1,8 +1,8 @@
 {
   "by_meeting": {
     "Angers": "Bon souple",
-    "Saint-Cloud": "Bon souple",
-    "Bordeaux - Le Bouscat": "Bon souple",
+    "Saint-Cloud": "Souple",
+    "Bordeaux - Le Bouscat": "Souple",
     "Marseille-Borély": "Souple",
     "Marseille-Vivaux": "PSF Standard",
     "Chantilly": "Bon souple",
@@ -17,7 +17,8 @@
     "Strasbourg": "Souple",
     "Dax": "Souple",
     "Fontainebleau": "Bon souple",
-    "Le Lion-d'Angers": "Bon souple"
+    "Le Lion-d'Angers": "Bon souple",
+    "Châteaubriant": "Très souple"
   },
   "by_race_name": {
     "Prix de Barbery": "PSF Standard",
