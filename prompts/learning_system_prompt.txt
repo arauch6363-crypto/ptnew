@@ -51,8 +51,8 @@ pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runn
 lenghts_beaten      e.g. 2 = 2 lenghts behind winner
 avg_pm              field strengt; should be read relative to field
 notepad=true        previously flagged unlucky or notably strong
-opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
-opp2                indirect form link via common opponent; higher score = beat them on AR
+opp                 the ARR margin by which this horse beat (positive) or lost to (negative) that rival in the shared race. E.g. adj: 4.9 means this horse posted an ARR 4.9 points higher than that rival.
+opp2                the transitive ARR edge via the shared common opponent. Higher is better; treat as directional signal only, not a precise margin.
 SPs                 measure of expectations toward that runner
 meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the race in recent form      
 
