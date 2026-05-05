@@ -45,7 +45,7 @@ weight_kg        weight in kg the horse has to carry in the race
 blinkers/hood    headgear worn by the horse; if null horse wore no headgear      
 
 ── RECENT FORM (recent_form[]) ───────────────────────────────────────────────
-arr                 adjusted performance rating vs field; arr should be read relative to the field
+arr                 the horse's rating for that specific run.
 ff                  field form quality — positive = strong race (field improved); negative = weak (consider sample size)
 pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners)
 lenghts_beaten      e.g. 2 = 2 lenghts behind winner
