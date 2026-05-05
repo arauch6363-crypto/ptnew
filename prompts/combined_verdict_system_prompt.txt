@@ -16,7 +16,7 @@ arr                 adjusted performance rating vs field; arr should be read rel
 pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners); pos in the top half can be considered competetive
 lenghts_beaten      e.g. 2 = 2 lenghts behind winner; <6 lenghts behind can be considered competetive
 ff                  field form quality — positive = strong race (field improved); negative = weak (consider sample size)
-avg_pm              fields form quality; should be read relative to field; the higher the better
+avg_pm              average prize-per-run of all runners in that past race, serving as a proxy for field quality. A high arr posted in a low avg_pm race carries less weight than the same arr against a high avg_pm field
 notepad=true        previously flagged unlucky or notably strong; weight positively
 opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
 opp2                indirect form link via common opponent; higher score = beat them on AR
