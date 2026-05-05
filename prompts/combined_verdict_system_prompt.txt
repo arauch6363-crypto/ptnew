@@ -9,15 +9,17 @@ SIGNALS REFERENCE
 
 ── HORSE CLASS ─────────────────────────────────────────────────────────────────────
 ARR               max median and average ARR in recent form give a solid understanding of horse class; should be read relative to the field; the higher the better
-arr_med           median adjusted performance rating across last 5 runs; stable class indicator
-arr_max           peak adjusted performance rating across last 5 runs; ceiling class indicator
+arr_med           median adjusted performance rating across last 5 runs; read relative to field; stable class indicator
+arr_max           peak adjusted performance rating across last 5 runs; read relative to field; ceiling class indicator
 val               handicap edge; should be read relative to the field; the higher the better
 rtr               elo-rating of the horse; should be read relative to the field; the higher the better
 horse_stats       runs/wins/places, win_pct, place_pct, a/e_place, prize_per_run (€ rounded to integer)
 horse_runs        <10 unexposed horse; potential improver; the more runs the more exposed is the horse
 age               <=3 unexposed horse; potential improver
 ae_place          > 1.0 outperforms market; < 0.9 underperforms (consider sample size)
-sex               slight preference M > H > F
+sex               M = colt; H = gelding; F = filly — slight preference M > H > F
+weight_kg         weight the horse has to carry; higher weight = greater burden in handicaps
+blinkers/hood     headgear worn; null = no headgear; first-time blinkers often a positive signal
 
 ── TRAINER / JOCKEY / SIRE ───────────────────────────────────────────────────
 pp365             avg pos_perc last 365 days (1 = always wins, 0 = always last; higher is better; > 0.5 = strong)
@@ -29,7 +31,7 @@ prefs             trainer: Jockey / Owner / Meeting / RaceType
 Sire stats and prefs especially for lightly raced horses
 
 ── CONDITIONS ───────────────────────────────────────────────────
-condition_panel   win/place record split by_going and by_distance bucket
+condition_panel   win/place record split by going and by distance bucket
 prefs             t-score vs all other conditions (horse: Meeting / Distance / Going)
 sig=true          statistically significant affinity (positive t) or aversion (negative t)
 draw_bias.bias    positive = high draw advantage at this track/trip; negative = disadvantage; n<10 = small sample
@@ -44,17 +46,17 @@ sp_tip              tipster starting price (lower = favourite)
 paris_turf_verdict  verdict of public racing analyst journalist
 
 ── FORM (recent_form[]) ───────────────────────────────────────────────
-arr                 adjusted performance rating vs field; arr should be read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
-pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners); pos in the top half can be considered competetive
-lenghts_beaten      e.g. 2 = 2 lenghts behind winner; <6 lenghts behind can be considered competetive
+arr                 adjusted performance rating vs field; read relative to the field; the higher the better; rising trend ≥ 3 runs = genuine improvement
+pos/field           result of the race (e.g. 1/9 = horse won in a field of 9); pos in the top half can be considered competitive
+lengths_beaten      e.g. 2 = 2 lengths behind winner; <6 lengths behind can be considered competitive
 ff                  field form quality — positive = strong race (field improved); negative = weak (consider sample size)
-avg_pm              strenght of competition in last races; read relative to field; the higher the better
+avg_pm              strength of competition in last races; read relative to field; the higher the better
 notepad=true        previously flagged unlucky or notably strong; weight positively
 opp                 direct rivals today who ran in same past race; adj > 0 = beat them on ARR
-opp2                indirect form link via common opponent; higher score = beat them on AR
-SPs                 measure of expectations toward that runner; the lower the better; <5/1, high expectation to win
-meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the race in recent form; form with the same or similar conditions are most informative    
-days_since_last_run  < 14 quick turnaround (high Fitness Level); 14–45 typical (normal fitness level); > 90 returning from break (questionable fitness Level)
+opp2                indirect form link via common opponent; higher score = beat them on ARR
+SPs                 starting price in that past race; the lower the better; <5 = high market expectation
+meeting/class/type/going_cat/dist_grp  venue/class/racetype/going/distance of the past race; form under the same or similar conditions is most informative
+days_since_last_run  < 14 quick turnaround; 14–45 typical; > 90 returning from break (questionable fitness)
 
 ════════════════════════════════════════════════════════════════════════════════
 NAP / EACH WAY SELECTION CRITERIA
