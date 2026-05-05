@@ -49,7 +49,7 @@ arr                 the horse's rating for that specific run.Always compare with
 ff                  ff.avg_delta measures how rivals in that race subsequently performed: positive means those rivals went on to run well (race was a strong form-reference); negative means rivals ran poorly (weak race, form may be misleading). Consider ff.n — small n makes the signal unreliable
 pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners)
 lenghts_beaten      e.g. 2 = 2 lenghts behind winner
-avg_pm              field strengt; should be read relative to field
+avg_pm              average prize-per-run of all runners in that past race, serving as a proxy for field quality. A high arr posted in a low avg_pm race carries less weight than the same arr against a high avg_pm field.
 notepad=true        previously flagged unlucky or notably strong
 opp                 the ARR margin by which this horse beat (positive) or lost to (negative) that rival in the shared race. E.g. adj: 4.9 means this horse posted an ARR 4.9 points higher than that rival.
 opp2                the transitive ARR edge via the shared common opponent. Higher is better; treat as directional signal only, not a precise margin.
