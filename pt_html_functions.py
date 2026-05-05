@@ -948,17 +948,19 @@ def export_all_races_html(df_hist, df_today,
             _race_json['race_class']          = race_class
             _race_json['paristurf_verdict']   = paristurf_verdict
 
-            # Filter horses in the verdict JSON to those mentioned in the PT text.
-            # Saves input tokens for the verdict generator and learner without
-            # touching the HTML (which still shows all runners).
-            if paristurf_verdict:
-                _pt_lower = paristurf_verdict.lower()
-                _mentioned = [
-                    h for h in _race_json['horses']
-                    if h.get('name', '').lower() in _pt_lower
-                ]
+            # Filter verdict JSON horses to those mentioned in the PT verdict,
+            # using webTipRank (already computed by process_webtips_fast and
+            # merged onto race_rows). Saves input tokens for verdict generator
+            # and learner; HTML is unaffected (rendered before this point).
+            if paristurf_verdict and 'webTipRank' in race_rows.columns:
+                _mentioned = set(
+                    race_rows[race_rows['webTipRank'].notna()]['horseName'].dropna()
+                )
                 if _mentioned:
-                    _race_json['horses'] = _mentioned
+                    _race_json['horses'] = [
+                        h for h in _race_json['horses']
+                        if h.get('name') in _mentioned
+                    ]
 
             # ── assemble page ─────────────────────────────────────
             import re
