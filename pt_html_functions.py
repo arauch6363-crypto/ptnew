@@ -948,6 +948,18 @@ def export_all_races_html(df_hist, df_today,
             _race_json['race_class']          = race_class
             _race_json['paristurf_verdict']   = paristurf_verdict
 
+            # Filter horses in the verdict JSON to those mentioned in the PT text.
+            # Saves input tokens for the verdict generator and learner without
+            # touching the HTML (which still shows all runners).
+            if paristurf_verdict:
+                _pt_lower = paristurf_verdict.lower()
+                _mentioned = [
+                    h for h in _race_json['horses']
+                    if h.get('name', '').lower() in _pt_lower
+                ]
+                if _mentioned:
+                    _race_json['horses'] = _mentioned
+
             # ── assemble page ─────────────────────────────────────
             import re
             safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', f'{meeting}__{race}')
