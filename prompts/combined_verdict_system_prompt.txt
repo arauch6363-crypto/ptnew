@@ -33,7 +33,7 @@ rtr               elo-rating of the horse; should be read relative to the field;
 horse_stats       runs/wins/places, win_pct, place_pct, a/e_place, prize_per_run (€ rounded to integer)
 horse_runs        <10 unexposed horse; potential improver; the more runs the more exposed is the horse
 age               <=3 unexposed horse; potential improver
-ae_place          > 1.0 outperforms market; < 0.9 underperforms (consider sample size)
+ae_place          > 1.0 outperforms market; < 0.9 underperforms; Always check the underlying runs sample — ae_place on fewer than 20 runs is unreliable.
 sex               slight preference M > H > F
 
 ── CONDITIONS ───────────────────────────────────────────────────
