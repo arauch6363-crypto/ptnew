@@ -26,8 +26,7 @@ paristurf_verdict prediction by public horse racing journalist in leading french
 ── HORSE ─────────────────────────────────────────────────────────────────────
 val               handicap rating; should be read relative to the field
 rtr               elo rating; should be read relative to the field
-arr_med           median adjusted performance rating across last 5 runs; read relative to field
-arr_max           peak adjusted performance rating across last 5 runs; read relative to field
+arr_med/max           median/max adjusted performance rating across last 5 runs; A horse with arr_max/med significantly above the field median (e.g. +3 or more) has a meaningful performance edge
 runs/wins/places  number or runs, wins and places in horse career
 win_pct           number of wins divided by number of runs 
 place_pct         number of places (first 3) divided by number of run
