@@ -24,9 +24,9 @@ sp_tip            prediciton of a horse racing mache learning model expressed in
 paristurf_verdict prediction by public horse racing journalist in leading french horse racing newspaper
 
 ── HORSE ─────────────────────────────────────────────────────────────────────
-val               handicap rating; should be read relative to the field
-rtr               elo rating; should be read relative to the field
-arr_med/max           median/max adjusted performance rating across last 5 runs; A horse with arr_max/med significantly above the field median (e.g. +3 or more) has a meaningful performance edge
+val               handicap rating; Always compare within the specific race field, not in absolute terms.
+rtr               elo rating; Always compare within the specific race field, not in absolute terms.
+arr_med/max           median/max adjusted performance rating across last 5 runs; A horse with arr_max/med significantly above the field median (e.g. +3 or more) has a meaningful performance edge. Always compare within the specific race field, not in absolute terms.
 runs/wins/places  number or runs, wins and places in horse career
 win_pct           number of wins divided by number of runs 
 place_pct         number of places (first 3) divided by number of run
@@ -45,7 +45,7 @@ weight_kg        weight in kg the horse has to carry in the race
 blinkers/hood    headgear worn by the horse; if null horse wore no headgear      
 
 ── RECENT FORM (recent_form[]) ───────────────────────────────────────────────
-arr                 the horse's rating for that specific run.
+arr                 the horse's rating for that specific run.Always compare within the specific race field, not in absolute terms.
 ff                  ff.avg_delta measures how rivals in that race subsequently performed: positive means those rivals went on to run well (race was a strong form-reference); negative means rivals ran poorly (weak race, form may be misleading). Consider ff.n — small n makes the signal unreliable
 pos/field           result of the race(e.g. 1/9 = horse won in a field of 9 runners)
 lenghts_beaten      e.g. 2 = 2 lenghts behind winner
