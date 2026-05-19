@@ -64,9 +64,16 @@ def _call_with_backoff(client: anthropic.Anthropic, **kwargs):
 
 # ── Agent 2: Verdict Quality Judge ────────────────────────────────────────────
 
-def _judge_single_verdict(client: anthropic.Anthropic, race: dict, judge_prompt: str) -> dict | None:
+def _make_judge_system_block(judge_prompt: str) -> list:
+    return [{"type": "text", "text": judge_prompt, "cache_control": {"type": "ephemeral"}}]
+
+
+def _judge_single_verdict(
+    client: anthropic.Anthropic, race: dict, judge_system_block: list
+) -> dict | None:
     """
     Judge the reasoning quality of one verdict.
+    Uses Haiku (simple classification) with cached system prompt.
     Returns judgment dict, or None on failure.
     """
     label = f"{race.get('meeting', '?')} — {race.get('race', '?')}"
@@ -81,9 +88,9 @@ def _judge_single_verdict(client: anthropic.Anthropic, race: dict, judge_prompt:
     try:
         resp = _call_with_backoff(
             client,
-            model="claude-sonnet-4-6",
+            model="claude-haiku-4-5-20251001",
             max_tokens=512,
-            system=judge_prompt,
+            system=judge_system_block,
             messages=[{"role": "user", "content": json.dumps(payload, default=str)}],
         )
         judgment = json.loads(_strip_json(resp.content[0].text))
@@ -153,7 +160,7 @@ def _extract_single_race(
         json.dumps(race, indent=2, default=str) + judge_context}]
 
     try:
-        max_tok = 4096
+        max_tok = 2048
         resp = _call_with_backoff(
             client,
             model="claude-sonnet-4-6",
@@ -162,7 +169,7 @@ def _extract_single_race(
             messages=msgs,
         )
         if resp.stop_reason == "max_tokens":
-            max_tok *= 2
+            max_tok = 4096
             print(f"  ⏳ Token limit [{label}] — retrying with max_tokens={max_tok} ...")
             with client.messages.stream(
                 model="claude-sonnet-4-6",
@@ -310,10 +317,11 @@ def run_multi_agent_learning(
     # ── Phase 1: Judge all verdicts in parallel ───────────────────────────────
     print(f"\n── Phase 1: Judging {len(enriched_races)} verdicts (parallel, {max_workers} workers) ──")
     judgments: dict[str, dict | None] = {}
+    judge_system_block = _make_judge_system_block(judge_system_prompt)
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         future_to_id = {
-            pool.submit(_judge_single_verdict, client, race, judge_system_prompt):
+            pool.submit(_judge_single_verdict, client, race, judge_system_block):
                 str(race.get("raceId", i))
             for i, race in enumerate(enriched_races)
         }
