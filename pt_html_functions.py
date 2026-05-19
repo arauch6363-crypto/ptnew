@@ -760,8 +760,8 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
 
         try:
             response = client.messages.create(
-                model='claude-sonnet-4-6',
-                max_tokens=4096,
+                model='claude-haiku-4-5-20251001',
+                max_tokens=1024,
                 system=SYSTEM_PROMPT_BATCH,
                 messages=[{'role': 'user', 'content': user_msg}],
             )
@@ -769,7 +769,7 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
             if response.stop_reason == 'max_tokens':
                 print(
                     f'  ⚠️  TOKEN LIMIT: notepad batch {batch_idx+1} truncated '
-                    f'(max_tokens=4096, in={response.usage.input_tokens}, '
+                    f'(max_tokens=1024, in={response.usage.input_tokens}, '
                     f'out={response.usage.output_tokens}) — increase max_tokens or split batch'
                 )
 
@@ -781,8 +781,6 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
             results = json.loads(raw)
 
             for item in results:
-                if not item.get('notepad', False):
-                    continue
                 rid_str   = str(item.get('raceId', ''))
                 hname_str = str(item.get('horse', ''))
                 hid       = horse_id_lookup.get((rid_str, hname_str))
@@ -790,7 +788,7 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
                     notepad_flags[(rid_str, str(hid))] = True
                     total_flagged += 1
 
-            print(f'  batch {batch_idx+1}/{len(batches)}: {len(results)} results parsed')
+            print(f'  batch {batch_idx+1}/{len(batches)}: {len(results)} flagged')
 
         except json.JSONDecodeError as e:
             print(f'  ⚠️  batch {batch_idx+1}: JSON parse error — {e}')
@@ -1242,7 +1240,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
 
     _messages = [{'role': 'user', 'content': user_msg}]
 
-    _max_tokens = 16384
+    _max_tokens = 3072
     resp = _anthropic_create_with_retry(
         client,
         model='claude-sonnet-4-6',
