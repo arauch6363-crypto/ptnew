@@ -30,10 +30,9 @@ RULES:
     target is a soft ceiling — it is fine to be slightly above 100 if all entries are distinct
     and high quality.
   — Each output entry must have: id (snake_case), learning (one sentence), counter (int >= 1),
-    direction (POSITIVE / NEGATIVE / NEUTRAL),
-    market_edge (boolean — true if the learning identifies horses that systematically beat or miss
-    their market price; false for general patterns. When MERGING: if either source has
-    market_edge=true, the merged result keeps market_edge=true),
+    direction (POSITIVE / NEGATIVE / NEUTRAL), market_edge (boolean — true if the learning
+    identifies horses that systematically beat or miss their market price; on MERGE, set true
+    if EITHER source entry has market_edge: true),
     category_counters (dict with the canonical six categories and bucket labels — see schema below;
     when merging, sum element-wise),
     created (YYYY-MM-DD, preserve from input; required), last_updated (YYYY-MM-DD).

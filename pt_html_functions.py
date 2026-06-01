@@ -760,8 +760,8 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
 
         try:
             response = client.messages.create(
-                model='claude-sonnet-4-6',
-                max_tokens=4096,
+                model='claude-haiku-4-5-20251001',
+                max_tokens=1024,
                 system=SYSTEM_PROMPT_BATCH,
                 messages=[{'role': 'user', 'content': user_msg}],
             )
@@ -769,7 +769,7 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
             if response.stop_reason == 'max_tokens':
                 print(
                     f'  ⚠️  TOKEN LIMIT: notepad batch {batch_idx+1} truncated '
-                    f'(max_tokens=4096, in={response.usage.input_tokens}, '
+                    f'(max_tokens=1024, in={response.usage.input_tokens}, '
                     f'out={response.usage.output_tokens}) — increase max_tokens or split batch'
                 )
 
@@ -781,8 +781,6 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
             results = json.loads(raw)
 
             for item in results:
-                if not item.get('notepad', False):
-                    continue
                 rid_str   = str(item.get('raceId', ''))
                 hname_str = str(item.get('horse', ''))
                 hid       = horse_id_lookup.get((rid_str, hname_str))
@@ -790,7 +788,7 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
                     notepad_flags[(rid_str, str(hid))] = True
                     total_flagged += 1
 
-            print(f'  batch {batch_idx+1}/{len(batches)}: {len(results)} results parsed')
+            print(f'  batch {batch_idx+1}/{len(batches)}: {len(results)} flagged')
 
         except json.JSONDecodeError as e:
             print(f'  ⚠️  batch {batch_idx+1}: JSON parse error — {e}')
@@ -947,6 +945,20 @@ def export_all_races_html(df_hist, df_today,
             _race_json['total_prize_eur']     = total_prize_raw
             _race_json['race_class']          = race_class
             _race_json['paristurf_verdict']   = paristurf_verdict
+
+            # Filter verdict JSON horses to those mentioned in the PT verdict,
+            # using webTipRank (already computed by process_webtips_fast and
+            # merged onto race_rows). Saves input tokens for verdict generator
+            # and learner; HTML is unaffected (rendered before this point).
+            if paristurf_verdict and 'webTipRank' in race_rows.columns:
+                _mentioned = set(
+                    race_rows[race_rows['webTipRank'].notna()]['horseName'].dropna()
+                )
+                if _mentioned:
+                    _race_json['horses'] = [
+                        h for h in _race_json['horses']
+                        if h.get('name') in _mentioned
+                    ]
 
             # ── assemble page ─────────────────────────────────────
             import re
@@ -1177,7 +1189,9 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
         block_a_ids = {l.get('id') for l in top_learnings if l.get('id')}
 
         lines = [
-            f'{i+1}. [n={e.get("counter",1)}, dir={e.get("direction","?")}{"," + " edge=✓" if e.get("market_edge") else ""}] {e.get("learning","")}'
+            f'{i+1}. [n={e.get("counter",1)}, dir={e.get("direction","?")}'
+            + (', edge=✓' if e.get('market_edge') else '')
+            + f'] {e.get("learning","")}'
             for i, e in enumerate(top_learnings)
         ]
         learnings_block = (
@@ -1212,7 +1226,9 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
     ]
     if block_b_entries:
         _b_lines = [
-            f'{i+1}. [match_score={s}, n={e.get("counter",1)}, dir={e.get("direction","?")}{"," + " edge=✓" if e.get("market_edge") else ""}] {e.get("learning","")}'
+            f'{i+1}. [match_score={s}, n={e.get("counter",1)}, dir={e.get("direction","?")}'
+            + (', edge=✓' if e.get('market_edge') else '')
+            + f'] {e.get("learning","")}'
             for i, (s, e) in enumerate(block_b_entries)
         ]
         user_msg_parts.append('')
@@ -1224,7 +1240,7 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
 
     _messages = [{'role': 'user', 'content': user_msg}]
 
-    _max_tokens = 16384
+    _max_tokens = 3072
     resp = _anthropic_create_with_retry(
         client,
         model='claude-sonnet-4-6',
@@ -1237,14 +1253,15 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
 
     if resp.stop_reason == 'max_tokens':
         _max_tokens *= 2
-        print(f'  ⏳ "{_race_label}" truncated — retrying with max_tokens={_max_tokens} ...')
-        resp = _anthropic_create_with_retry(
-            client,
+        print(f'  ⏳ "{_race_label}" truncated — retrying with max_tokens={_max_tokens} (streaming) ...')
+        import anthropic as _anthropic_mod
+        with client.messages.stream(
             model='claude-sonnet-4-6',
             max_tokens=_max_tokens,
             system=system_blocks,
             messages=_messages,
-        )
+        ) as _stream:
+            resp = _stream.get_final_message()
 
     _cache_read = getattr(resp.usage, 'cache_read_input_tokens', 0) or 0
     _cache_created = getattr(resp.usage, 'cache_creation_input_tokens', 0) or 0
@@ -1259,18 +1276,34 @@ def generate_combined_verdict(race_json, api_key, learnings_db=None,
             f'out={resp.usage.output_tokens}) — increase max_tokens'
         )
 
-    text = resp.content[0].text.strip()
-    text = _re.sub(r'^```(?:json)?\s*', '', text)
-    text = _re.sub(r'\s*```$', '', text)
-    match = _re.search(r'\{[\s\S]*\}', text)
-    if match:
-        try:
-            result = _json.loads(match.group())
-            if 'nap' in result and 'each_way' in result:
-                return result
-        except _json.JSONDecodeError:
-            pass
-    return {}
+    def _parse_verdict(r):
+        text = r.content[0].text.strip()
+        text = _re.sub(r'^```(?:json)?\s*', '', text)
+        text = _re.sub(r'\s*```$', '', text)
+        m = _re.search(r'\{[\s\S]*\}', text)
+        if m:
+            try:
+                result = _json.loads(m.group())
+                if 'nap' in result and 'each_way' in result:
+                    return result
+            except _json.JSONDecodeError:
+                pass
+        return None
+
+    parsed = _parse_verdict(resp)
+    if parsed is not None:
+        return parsed
+
+    # One retry on empty/unparseable response
+    print(f'  ⏳ "{_race_label}" empty response — retrying ...')
+    resp = _anthropic_create_with_retry(
+        client,
+        model='claude-sonnet-4-6',
+        max_tokens=_max_tokens,
+        system=system_blocks,
+        messages=_messages,
+    )
+    return _parse_verdict(resp) or {}
 
 
 def _render_race_verdict_html(verdict):
@@ -3343,7 +3376,7 @@ def _render_runners_html(race_rows, runners_hist,
                 'win_pct':       round(100 * st['wins']   / r2, 1) if r2 else 0,
                 'place_pct':     round(100 * st['places'] / r2, 1) if r2 else 0,
                 'ae_place':      st.get('ae_place'),
-                'prize_per_run': st.get('prizemoney'),
+                'prize_per_run': (round(st['prizemoney']) if st.get('prizemoney') is not None else None),
             }
         if 'saddle' in r.index and pd.notna(r.get('saddle')):
             _saddle_raw = r['saddle']
@@ -3363,6 +3396,10 @@ def _render_runners_html(race_rows, runners_hist,
             'weight_kg':            (float(wt_raw) if wt_raw is not None and pd.notna(wt_raw) else None),
             'val':                  adj_val_float,
             'rtr':                  rtr_adj_float,
+            'arr_med':              (round(float(np.median([e['arr_raw'] for e in _ctx[:5] if e.get('arr_raw') is not None])), 2)
+                                    if any(e.get('arr_raw') is not None for e in _ctx[:5]) else None),
+            'arr_max':              (round(float(max(e['arr_raw'] for e in _ctx[:5] if e.get('arr_raw') is not None)), 2)
+                                    if any(e.get('arr_raw') is not None for e in _ctx[:5]) else None),
             'days_since_last_run':  horse_last_start.get(hid),
             'going_category_today': horse_going_grp,
             'distance_group_today': horse_dist_grp,
@@ -3407,12 +3444,12 @@ def _render_runners_html(race_rows, runners_hist,
                     'class':          e.get('race_class'),
                     'type':           e.get('race_type'),
                     'opp':            [{'name': n, 'adj': a} for n, a in e.get('opp', [])],
-                    'avg_pm':         e.get('avg_pm_raw'),
+                    'avg_pm':         (round(e['avg_pm_raw']) if e.get('avg_pm_raw') is not None else None),
                     'opp2':           [{'b_name': o2['b_name'], 'x_name': o2['x_name'],
                                         'score': o2['score']}
                                        for o2 in (e.get('opp2') or [])],
                 }
-                for e in _ctx[-5:]
+                for e in _ctx[:5]
             ],
         })
 

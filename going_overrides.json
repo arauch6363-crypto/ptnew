@@ -1,25 +1,30 @@
 {
   "by_meeting": {
-    "Saint-Cloud": "Bon souple",
-    "Bordeaux - Le Bouscat": "Bon souple",
-    "Marseille-Borély": "Souple",
-    "Chantilly": "Souple",
-    "Compiegne": "Bon souple",
+    "Angers": "Bon souple",
+    "Saint-Cloud": "Souple",
+    "Bordeaux - Le Bouscat": "Souple",
+    "Marseille-Borély": "Très souple",
+    "Marseille-Vivaux": "PSF Standard",
+    "Chantilly": "Bon souple",
+    "Compiegne": "Souple",
     "Le Mans": "Bon souple",
     "Évreux": "Souple",
-    "ParisLongchamp": "Bon souple",
+    "ParisLongchamp": "Souple",
     "Salon-de-Provence": "Bon souple",
     "Tarbes": "Souple",
     "La Teste": "Bon souple",
     "Lyon-Parilly": "Souple",
+    "Nancy": "Souple",
     "Strasbourg": "Souple",
+    "Dax": "Souple",
     "Fontainebleau": "Bon souple",
-    "Le Lion-d'Angers": "Bon souple"
+    "Le Lion-d'Angers": "Bon souple",
+    "Châteaubriant": "Très souple"
   },
   "by_race_name": {
-    "Prix Chantilly Capitale du Cheval": "PSF Standard",
-    "Prix de l'Arrondissement de Beauvais": "PSF Standard",
-    "Prix de l'Arrondissement de Senlis": "PSF Standard",
+    "Prix de Barbery": "PSF Standard",
+    "Prix de Borest": "PSF Standard",
+    "Prix de Baron": "PSF Standard",
     "Prix du Canal Saint-Jean": "PSF Standard",
     "Prix du Canal des Druides": "PSF Standard"
   }
