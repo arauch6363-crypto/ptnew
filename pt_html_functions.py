@@ -783,9 +783,9 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=7):
                 hid       = horse_id_lookup.get((rid_str, hname_str))
                 if hid is not None:
                     notepad_flags[(rid_str, str(hid))] = {
-                        'running_position': int(item.get('running_position') or 3),
-                        'lane_position':    int(item.get('lane_position')    or 2),
-                        'finishing_effort': int(item.get('finishing_effort') or 1),
+                        'running_position': int(item['running_position'] if item.get('running_position') is not None else 3),
+                        'lane_position':    int(item['lane_position']    if item.get('lane_position')    is not None else 2),
+                        'finishing_effort': int(item['finishing_effort'] if item.get('finishing_effort') is not None else 1),
                         'hampered':         bool(item.get('hampered', False)),
                     }
                     n_parsed += 1
@@ -2303,9 +2303,9 @@ def _render_runners_html(race_rows, runners_hist,
 
                 # ── Run cell: running position + finishing effort + hampered ────
                 if nd is not None:
-                    rp  = max(1, min(5, int(nd.get('running_position') or 3)))
-                    lp  = max(1, min(3, int(nd.get('lane_position')    or 2)))
-                    fe  = max(0, min(3, int(nd.get('finishing_effort') or 1)))
+                    rp  = max(1, min(5, int(nd['running_position'] if nd.get('running_position') is not None else 3)))
+                    lp  = max(1, min(3, int(nd['lane_position']    if nd.get('lane_position')    is not None else 2)))
+                    fe  = max(0, min(3, int(nd['finishing_effort'] if nd.get('finishing_effort') is not None else 1)))
                     hmp = bool(nd.get('hampered', False))
 
                     # ── Position strip: 5 segments, active coloured by lane ──────
