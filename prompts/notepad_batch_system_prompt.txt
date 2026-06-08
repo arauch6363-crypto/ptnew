@@ -39,7 +39,8 @@ finishing_effort — Stärke des Endspurts in den letzten ~2 Furlongs:
 
 hampered — Wurde das Pferd durch EXTERNE, physische Einwirkung behindert?
   true NUR bei:
-  - kein freier Lauf / keine Passage (bouché, manque de place, pris en sandwich)
+  - kein freier Lauf / keine Passage (bouché, manque de place, pris en sandwich, pas eu de passage)
+  - späte Passage / musste auf Lücke warten (n'a trouvé son passage qu'en fin de ligne, passage tardif, a dû attendre)
   - Behinderung durch ein anderes Pferd (gêné, bousculé, coupé, interferé)
   - Jockey hat Peitsche verloren (perdu sa cravache)
   - Sturz/Kontakt mit anderem Pferd oder Rails
