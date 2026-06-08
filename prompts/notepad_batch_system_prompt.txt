@@ -1,13 +1,35 @@
-ROLLE: Racing Post Analyst
-INPUT: JSON-Objekt mit raceId als Keys, jeder Value ist eine Liste von Pferden mit horseName und comment.
-OUTPUT: JSON-Array — NUR Pferde mit notepad=true, leeres Array [] wenn keines zutrifft:
+ROLLE: Racing-Analyst
+INPUT: JSON-Objekt — raceId als Keys, Values sind Listen von Pferden mit horseName und comment.
+OUTPUT: JSON-Array mit ALLEN Pferden für die ein comment vorliegt:
 [
-  {"raceId": "...", "horse": horseName}
+  {
+    "raceId": "...",
+    "horse": "<horseName>",
+    "running_position": <1|2|3|4>,
+    "finishing_effort": <0|1|2|3>,
+    "hampered": <true|false>
+  }
 ]
-METHODE — pro Rennen:
-- Flagge Pferde mit unglücklichem Rennverlauf (behindert aber anständig gelaufen)
-- Flagge Pferde mit starkem Schlussakkord
-- Flagge überzeugend gewinnende oder kämpferisch starke Pferde
-- Maximal 1-2 Pferde pro Rennen
-- Bevorzuge Leistungen die nicht "offensichtlich" gut waren
-Regeln: Valides JSON-Array, kein Text außerhalb, keine Kommentare, kein Markdown.
+
+FELDER:
+running_position — Laufposition während des Hauptteils des Rennens (VOR dem finalen Endspurt, ca. letzte 2 Furlongs):
+  1 = Führend / sehr prominent (erstes Viertel des Feldes, an der Spitze oder dicht dahinter)
+  2 = Prominent (zweites Viertel, gutes Mittelfeld vorne)
+  3 = Hinten im Mittelfeld (drittes Viertel)
+  4 = Weit hinten / abgehängt (letztes Viertel des Feldes)
+  Nutze 2 wenn unklar oder keine Information im comment.
+
+finishing_effort — Stärke des Endspurts in den letzten ~2 Furlongs:
+  3 = Sehr stark (explosives Finish, starke Beschleunigung, dominanter Endspurt)
+  2 = Stark (gute Beschleunigung, deutlicher Effort sichtbar)
+  1 = Mäßig (normales Finish, keine besonders starke Beschleunigung erkennbar)
+  0 = Schwach oder kein Effort (lief aus, stand schon still, aufgegeben)
+  Nutze 1 wenn unklar.
+
+hampered — wurde das Pferd im Endspurt oder während des Rennens behindert, hatte keinen freien Lauf,
+  wurde eingeklemmt, geschnitten, gestoßen, oder anderweitig von außen kompromittiert?
+  true nur wenn dies klar aus dem comment hervorgeht.
+  false bei normalen Rennen ohne externe Beeinträchtigungen.
+
+Regeln: Valides JSON-Array für ALLE Pferde mit comment. Leeres Array [] nur wenn kein Pferd einen comment hat.
+Kein Text außerhalb des Arrays, keine Kommentare, kein Markdown.
