@@ -2326,22 +2326,18 @@ def _render_runners_html(race_rows, runners_hist,
                         f'border-radius:2px;overflow:hidden">{rp_segs}</div>'
                     )
 
-                    # ── Effort bars: equalizer-style, heights 5/7/9px ────────────
-                    fe_col   = _FE_COL[fe]
-                    fe_bars  = ''
-                    _bh = [5, 7, 9]
-                    for bi in range(3):
-                        if bi < fe:
-                            fe_bars += (
-                                f'<div style="width:4px;height:{_bh[bi]}px;'
-                                f'background:{fe_col};border-radius:1px" '
-                                f'title="Endspurt {fe}/3"></div>'
-                            )
-                        else:
-                            fe_bars += (
-                                f'<div style="width:4px;height:{_bh[bi]}px;'
-                                f'background:#ddd;border-radius:1px"></div>'
-                            )
+                    # ── Effort bars: 4-bar equalizer, fe 0→1 bar … 3→4 bars ─────
+                    fe_col    = _FE_COL[fe]
+                    fe_bars   = ''
+                    _bh       = [4, 6, 8, 10]
+                    filled    = fe + 1   # always at least 1 bar shown
+                    for bi in range(4):
+                        col = fe_col if bi < filled else '#ddd'
+                        fe_bars += (
+                            f'<div style="width:4px;height:{_bh[bi]}px;'
+                            f'background:{col};border-radius:1px" '
+                            f'title="Endspurt {fe}/3"></div>'
+                        )
                     fe_html = (
                         f'<div style="display:inline-flex;gap:1px;align-items:flex-end">'
                         f'{fe_bars}</div>'
