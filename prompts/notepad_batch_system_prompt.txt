@@ -5,31 +5,50 @@ OUTPUT: JSON-Array mit ALLEN Pferden für die ein comment vorliegt:
   {
     "raceId": "...",
     "horse": "<horseName>",
-    "running_position": <1|2|3|4>,
+    "running_position": <1|2|3|4|5>,
+    "lane_position": <1|2|3>,
     "finishing_effort": <0|1|2|3>,
     "hampered": <true|false>
   }
 ]
 
 FELDER:
-running_position — Laufposition während des Hauptteils des Rennens (VOR dem finalen Endspurt, ca. letzte 2 Furlongs):
-  1 = Führend / sehr prominent (erstes Viertel des Feldes, an der Spitze oder dicht dahinter)
-  2 = Prominent (zweites Viertel, gutes Mittelfeld vorne)
-  3 = Hinten im Mittelfeld (drittes Viertel)
-  4 = Weit hinten / abgehängt (letztes Viertel des Feldes)
-  Nutze 2 wenn unklar oder keine Information im comment.
+running_position — Laufposition im Hauptteil des Rennens (VOR dem finalen Endspurt, ca. letzte 2 Furlongs).
+Einteilung in 5 Quintile von vorne nach hinten:
+  1 = Führend / sehr prominent (Spitze oder direkt dahinter, klar im vordersten Fünftel)
+  2 = Vorderes Mittelfeld (zweites Fünftel)
+  3 = Mittelfeld (drittes Fünftel)
+  4 = Hinteres Mittelfeld (viertes Fünftel)
+  5 = Weit hinten / abgehängt (letztes Fünftel des Feldes)
+  Nutze 3 wenn unklar oder keine Information im comment.
+
+lane_position — Laterale Position im Rennen (Abstand zur Innenbahn/Rail):
+  1 = Innenbahn / am Rail / innen (innerste 1-2 Lanes)
+  2 = Mitte der Bahn (mittlere Lanes)
+  3 = Außenbahn / weit außen (3. Lane oder weiter außen)
+  Nutze 2 wenn unklar.
+  Hinweise: "rail", "intérieur", "piste intérieure" → 1; "large", "extérieur", "dehors" → 3.
 
 finishing_effort — Stärke des Endspurts in den letzten ~2 Furlongs:
   3 = Sehr stark (explosives Finish, starke Beschleunigung, dominanter Endspurt)
   2 = Stark (gute Beschleunigung, deutlicher Effort sichtbar)
-  1 = Mäßig (normales Finish, keine besonders starke Beschleunigung erkennbar)
-  0 = Schwach oder kein Effort (lief aus, stand schon still, aufgegeben)
+  1 = Mäßig (normales Finish, keine besonders starke Beschleunigung)
+  0 = Schwach oder kein Effort (lief aus, müde, stand schon still)
   Nutze 1 wenn unklar.
+  WICHTIG: "a coincé pour finir", "a faibli", "s'est épuisé" = normales Ermüden → finishing_effort 0 oder 1, KEIN hampered.
 
-hampered — wurde das Pferd im Endspurt oder während des Rennens behindert, hatte keinen freien Lauf,
-  wurde eingeklemmt, geschnitten, gestoßen, oder anderweitig von außen kompromittiert?
-  true nur wenn dies klar aus dem comment hervorgeht.
-  false bei normalen Rennen ohne externe Beeinträchtigungen.
+hampered — Wurde das Pferd durch eine EXTERNE, physische Einwirkung in seiner Leistung beeinträchtigt?
+  true wenn aus dem Kontext hervorgeht, dass das Pferd:
+  - keinen freien Lauf hatte oder auf eine Lücke warten musste (auch spät im Rennen)
+  - durch ein anderes Pferd bedrängt, abgeschnitten, eingeklemmt oder behindert wurde
+  - den Jockey verloren hat oder der Jockey die Peitsche verlor
+  - Körperkontakt mit einem anderen Pferd oder der Bande hatte der seine Leistung beeinträchtigte
+  false wenn das Pferd lediglich:
+  - am Ende ermüdet oder eingebrochen ist (normales Nachlassen der Kräfte)
+  - normalem Druck und Konkurrenz durch Rivalen ausgesetzt war
+  - schlecht gestartet ist ohne äußere Einwirkung
+  - generell schwach gelaufen ist ohne externe Ursache
+  Entscheide anhand des Gesamtkontexts des comments — nicht anhand einzelner Wörter.
 
 Regeln: Valides JSON-Array für ALLE Pferde mit comment. Leeres Array [] nur wenn kein Pferd einen comment hat.
 Kein Text außerhalb des Arrays, keine Kommentare, kein Markdown.

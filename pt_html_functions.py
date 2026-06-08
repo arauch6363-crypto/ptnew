@@ -659,10 +659,11 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=7):
 
     Returns
     -------
-    dict  {(raceId, horseId): {"running_position": int, "finishing_effort": int, "hampered": bool}}
-      running_position : 1=leading, 2=prominent, 3=toward rear, 4=at rear
+    dict  {(raceId, horseId): {"running_position": int, "lane_position": int, "finishing_effort": int, "hampered": bool}}
+      running_position : 1=leading … 5=at rear (quintile)
+      lane_position    : 1=rail/inside, 2=middle, 3=outside/wide
       finishing_effort : 0=very weak … 3=very strong
-      hampered         : True if horse was blocked / had no clear run
+      hampered         : True only for external physical interference
     """
     import json
     import anthropic
@@ -755,8 +756,8 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=7):
 
         try:
             response = client.messages.create(
-                model='claude-haiku-4-5-20251001',
-                max_tokens=2048,
+                model='claude-sonnet-4-6',
+                max_tokens=4096,
                 system=SYSTEM_PROMPT_BATCH,
                 messages=[{'role': 'user', 'content': user_msg}],
             )
@@ -764,7 +765,7 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=7):
             if response.stop_reason == 'max_tokens':
                 print(
                     f'  ⚠️  TOKEN LIMIT: notepad batch {batch_idx+1} truncated '
-                    f'(max_tokens=2048, in={response.usage.input_tokens}, '
+                    f'(max_tokens=4096, in={response.usage.input_tokens}, '
                     f'out={response.usage.output_tokens}) — increase max_tokens or split batch'
                 )
 
@@ -782,7 +783,8 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=7):
                 hid       = horse_id_lookup.get((rid_str, hname_str))
                 if hid is not None:
                     notepad_flags[(rid_str, str(hid))] = {
-                        'running_position': int(item.get('running_position') or 2),
+                        'running_position': int(item.get('running_position') or 3),
+                        'lane_position':    int(item.get('lane_position')    or 2),
                         'finishing_effort': int(item.get('finishing_effort') or 1),
                         'hampered':         bool(item.get('hampered', False)),
                     }
@@ -2269,9 +2271,9 @@ def _render_runners_html(race_rows, runners_hist,
                     f'padding:0 3px;font-size:9px">{flag}</span></td>'
                 )
 
-            # Running-position / finishing-effort quartile colours
-            _RP_COL = {1: '#27ae60', 2: '#2980b9', 3: '#e67e22', 4: '#c0392b'}
-            _FE_COL = {3: '#27ae60', 2: '#2980b9', 1: '#e67e22', 0: '#bbb'}
+            # Lane-position colour (inside=green → outside=red); finishing-effort colour
+            _LANE_COL = {1: '#27ae60', 2: '#e67e22', 3: '#c0392b'}
+            _FE_COL   = {3: '#27ae60', 2: '#2980b9', 1: '#e67e22', 0: '#bbb'}
 
             result_cells = ''
             run_cells    = ''
@@ -2301,25 +2303,30 @@ def _render_runners_html(race_rows, runners_hist,
 
                 # ── Run cell: running position + finishing effort + hampered ────
                 if nd is not None:
-                    rp  = max(1, min(4, int(nd.get('running_position') or 2)))
+                    rp  = max(1, min(5, int(nd.get('running_position') or 3)))
+                    lp  = max(1, min(3, int(nd.get('lane_position')    or 2)))
                     fe  = max(0, min(3, int(nd.get('finishing_effort') or 1)))
                     hmp = bool(nd.get('hampered', False))
 
-                    # ── Position strip: 4 segments, active one coloured ──────────
-                    # Reads left-to-right as field positions: leading → at rear
-                    rp_col    = _RP_COL[rp]
-                    rp_titles = ['Führend', 'Prominent', 'Hinten im Mittelfeld', 'Weit hinten']
+                    # ── Position strip: 5 segments, active coloured by lane ──────
+                    # Horizontal axis = field position (leader → rear)
+                    # Colour = lateral lane (green=inside/rail … red=outside/wide)
+                    seg_col   = _LANE_COL[lp]
+                    rp_titles = ['Führend', 'Vorderes Mittelfeld', 'Mittelfeld',
+                                 'Hinteres Mittelfeld', 'Weit hinten']
+                    lane_tips = ['Innenbahn/Rail', 'Mittelbahn', 'Außenbahn/weit außen']
+                    tip       = f'{rp_titles[rp-1]} · {lane_tips[lp-1]}'
                     rp_segs   = ''
-                    for qi in range(1, 5):
+                    for qi in range(1, 6):
                         if qi == rp:
                             rp_segs += (
-                                f'<div style="width:8px;height:10px;background:{rp_col};'
-                                f'border-radius:1px" title="{rp_titles[rp-1]}"></div>'
+                                f'<div style="width:7px;height:10px;background:{seg_col};'
+                                f'border-radius:1px" title="{tip}"></div>'
                             )
                         else:
                             rp_segs += (
-                                '<div style="width:8px;height:10px;background:#ccc;'
-                                'border-radius:1px;opacity:0.25"></div>'
+                                '<div style="width:7px;height:10px;background:#ccc;'
+                                'border-radius:1px;opacity:0.22"></div>'
                             )
                     rp_html = (
                         f'<div style="display:inline-flex;gap:1px;'
