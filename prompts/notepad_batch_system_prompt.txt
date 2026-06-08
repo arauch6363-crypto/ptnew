@@ -11,7 +11,6 @@ OUTPUT: JSON-Array mit ALLEN Pferden für die ein comment vorliegt:
     "hampered": <true|false>
   }
 ]
-
 FELDER:
 running_position — Laufposition im Hauptteil des Rennens (VOR dem finalen Endspurt, ca. letzte 2 Furlongs).
 Einteilung in 5 Quintile von vorne nach hinten:
@@ -21,34 +20,52 @@ Einteilung in 5 Quintile von vorne nach hinten:
   4 = Hinteres Mittelfeld (viertes Fünftel)
   5 = Weit hinten / abgehängt (letztes Fünftel des Feldes)
   Nutze 3 wenn unklar oder keine Information im comment.
-
 lane_position — Laterale Position im Rennen (Abstand zur Innenbahn/Rail):
   1 = Innenbahn / am Rail / innen (innerste 1-2 Lanes)
   2 = Mitte der Bahn (mittlere Lanes)
   3 = Außenbahn / weit außen (3. Lane oder weiter außen)
   Nutze 2 wenn unklar.
-  Hinweise: "rail", "intérieur", "piste intérieure" → 1; "large", "extérieur", "dehors" → 3.
-
+  Hinweise: "rail", "intérieur", "piste intérieure", "à la corde", "en dedans" → 1; "large", "extérieur", "dehors", "en dehors" → 3.
 finishing_effort — Stärke des Endspurts in den letzten ~2 Furlongs:
   3 = Sehr stark (explosives Finish, starke Beschleunigung, dominanter Endspurt)
   2 = Stark (gute Beschleunigung, deutlicher Effort sichtbar)
   1 = Mäßig (normales Finish, keine besonders starke Beschleunigung)
   0 = Schwach oder kein Effort (lief aus, müde, stand schon still)
   Nutze 1 wenn unklar.
-  WICHTIG: "a coincé pour finir", "a faibli", "s'est épuisé" = normales Ermüden → finishing_effort 0 oder 1, KEIN hampered.
+  WICHTIG: "a coincé pour finir", "a faibli", "s'est épuisé", "n'a pu hausser le ton", "a conclu en retrait" = normales Ermüden → finishing_effort 0 oder 1, KEIN hampered.
 
-hampered — Wurde das Pferd durch eine EXTERNE, physische Einwirkung in seiner Leistung beeinträchtigt?
-  true wenn aus dem Kontext hervorgeht, dass das Pferd:
-  - keinen freien Lauf hatte oder auf eine Lücke warten musste (auch spät im Rennen)
-  - durch ein anderes Pferd bedrängt, abgeschnitten, eingeklemmt oder behindert wurde
-  - den Jockey verloren hat oder der Jockey die Peitsche verlor
-  - Körperkontakt mit einem anderen Pferd oder der Bande hatte der seine Leistung beeinträchtigte
-  false wenn das Pferd lediglich:
-  - am Ende ermüdet oder eingebrochen ist (normales Nachlassen der Kräfte)
-  - normalem Druck und Konkurrenz durch Rivalen ausgesetzt war
-  - schlecht gestartet ist ohne äußere Einwirkung
-  - generell schwach gelaufen ist ohne externe Ursache
-  Entscheide anhand des Gesamtkontexts des comments — nicht anhand einzelner Wörter.
+hampered — Wurde das Pferd durch eine EXTERNE, PHYSISCHE Behinderung daran gehindert, sein eigenes Rennen zu laufen?
+
+KERNFRAGE (zuerst intern beantworten, bevor du true/false setzt):
+"Konnte das Pferd seinen Lauf/Endspurt NICHT so abrufen, wie es wollte, weil ihm physisch der Weg/Platz fehlte?"
+- JA (kein Platz, eingeklemmt, abgeschnitten, Kontakt mit Momentumverlust, musste auf Lücke warten, Jockey/Peitsche verloren) → true
+- NEIN (es wurde lediglich von Rivalen herausgefordert, überholt, abgekämpft ODER ist von selbst ermüdet) → false
+
+WICHTIGSTE REGEL — Wettkampf ist KEIN hampering:
+Französische Kommentare beschreiben normales Duell-/Finish-Geschehen mit Kampfvokabeln.
+Ein Pferd, das angegriffen, überholt oder im Spurt bezwungen wird, ist NICHT behindert — es ist schlicht geschlagen worden.
+
+false (trotz dramatischer Wortwahl) bei u.a.:
+- "subir l'assaut / les attaques de [Pferd]"  → ein Rivale fordert heraus = Konkurrenz
+- "pressé / attaqué / rejoint / débordé / dominé par [Pferd]" → wurde herausgefordert/überholt
+- "n'a pu hausser le ton", "n'a pas accéléré", "a fait illusion", "a faibli",
+  "a coincé pour finir", "s'est épuisé", "a conclu en (léger) retrait" → reines Ermüden
+- "est sorti de la corde", "lancé(e) en dehors", "déboîté" ALLEIN → laterales/taktisches Manöver,
+  nur dann true, wenn der Kommentar einen erzwungenen Umweg oder fehlenden Platz nennt
+- schlechter Start ohne äußere Einwirkung
+
+true nur bei EXPLIZITER physischer Behinderung, z.B.:
+- "gêné", "bousculé", "serré", "tassé", "fermé", "enfermé"
+- "coincé ENTRE deux concurrents", "à la corde sans pouvoir sortir", "sans solution"
+- "a manqué de place", "a dû attendre/patienter une ouverture", "a buté"
+- "a perdu son jockey", Jockey "a perdu sa cravache/son fouet"
+- Kontakt mit Bande/anderem Pferd, der die Leistung nachweislich beeinträchtigt hat
+
+FALLE: "a coincé" (intransitiv, allein) = ermüdet → false.
+       "coincé entre / s'est retrouvé coincé" = eingeklemmt → true.
+       Auf die Konstruktion achten, nicht nur auf das Wort.
+
+Entscheide hampered immer anhand des Gesamtkontexts des comments — nicht anhand einzelner Wörter.
 
 Regeln: Valides JSON-Array für ALLE Pferde mit comment. Leeres Array [] nur wenn kein Pferd einen comment hat.
 Kein Text außerhalb des Arrays, keine Kommentare, kein Markdown.
