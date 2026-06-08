@@ -646,26 +646,29 @@ TF = dict(
 
 SYSTEM_PROMPT_BATCH = _load_prompt('notepad_batch_system_prompt.txt')
 
-def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
+def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=7):
     """
-    Pre-computes notepad flags for the last `max_races_per_horse` races of every
-    horse running today.  Returns a dict keyed by (raceId, horseId) -> bool.
+    Analyses the last `max_races_per_horse` races of every horse running today.
+    Returns a dict keyed by (raceId, horseId) with structured race-behaviour data.
 
     Parameters
     ----------
     df_today      : today's race DataFrame (needs horseId, raceId columns)
     runners_hist  : historical race DataFrame (needs horseId, raceId, date, comment, horseName)
-    max_races_per_horse : how many recent races per horse to analyse (default 3)
+    max_races_per_horse : how many recent races per horse to analyse (default 7)
 
     Returns
     -------
-    dict  {(raceId, horseId): True}   — only flagged entries are stored
+    dict  {(raceId, horseId): {"running_position": int, "finishing_effort": int, "hampered": bool}}
+      running_position : 1=leading, 2=prominent, 3=toward rear, 4=at rear
+      finishing_effort : 0=very weak … 3=very strong
+      hampered         : True if horse was blocked / had no clear run
     """
     import json
     import anthropic
     import datetime as _dt
 
-    notepad_flags = {}
+    notepad_flags = {}   # {(raceId, horseId): {"running_position", "finishing_effort", "hampered"}}
 
     # ── guard: required columns ───────────────────────────────────────────────
     required_hist = {'horseId', 'raceId', 'date', 'comment', 'horseName'}
@@ -753,7 +756,7 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
         try:
             response = client.messages.create(
                 model='claude-haiku-4-5-20251001',
-                max_tokens=1024,
+                max_tokens=2048,
                 system=SYSTEM_PROMPT_BATCH,
                 messages=[{'role': 'user', 'content': user_msg}],
             )
@@ -761,7 +764,7 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
             if response.stop_reason == 'max_tokens':
                 print(
                     f'  ⚠️  TOKEN LIMIT: notepad batch {batch_idx+1} truncated '
-                    f'(max_tokens=1024, in={response.usage.input_tokens}, '
+                    f'(max_tokens=2048, in={response.usage.input_tokens}, '
                     f'out={response.usage.output_tokens}) — increase max_tokens or split batch'
                 )
 
@@ -772,15 +775,21 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
 
             results = json.loads(raw)
 
+            n_parsed = 0
             for item in results:
                 rid_str   = str(item.get('raceId', ''))
                 hname_str = str(item.get('horse', ''))
                 hid       = horse_id_lookup.get((rid_str, hname_str))
                 if hid is not None:
-                    notepad_flags[(rid_str, str(hid))] = True
+                    notepad_flags[(rid_str, str(hid))] = {
+                        'running_position': int(item.get('running_position') or 2),
+                        'finishing_effort': int(item.get('finishing_effort') or 1),
+                        'hampered':         bool(item.get('hampered', False)),
+                    }
+                    n_parsed += 1
                     total_flagged += 1
 
-            print(f'  batch {batch_idx+1}/{len(batches)}: {len(results)} flagged')
+            print(f'  batch {batch_idx+1}/{len(batches)}: {n_parsed} horses parsed')
 
         except json.JSONDecodeError as e:
             print(f'  ⚠️  batch {batch_idx+1}: JSON parse error — {e}')
@@ -788,7 +797,7 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=3):
         except Exception as e:
             print(f'  ⚠️  batch {batch_idx+1}: API error — {e}')
 
-    print(f'✅ compute_notepad_flags done — {total_flagged} horses flagged across {len(race_ids)} races')
+    print(f'✅ compute_notepad_flags done — {total_flagged} horses analysed across {len(race_ids)} races')
     return notepad_flags
 
 
@@ -2260,7 +2269,12 @@ def _render_runners_html(race_rows, runners_hist,
                     f'padding:0 3px;font-size:9px">{flag}</span></td>'
                 )
 
+            # Running-position / finishing-effort quartile colours
+            _RP_COL = {1: '#27ae60', 2: '#2980b9', 3: '#e67e22', 4: '#c0392b'}
+            _FE_COL = {3: '#27ae60', 2: '#2980b9', 1: '#e67e22', 0: '#bbb'}
+
             result_cells = ''
+            run_cells    = ''
             for e in ctx_list:
                 rnk  = e.get('ranking')
                 rnrs = e.get('runners')
@@ -2269,30 +2283,93 @@ def _render_runners_html(race_rows, runners_hist,
                 lo   = e.get('liveOdd')
 
                 race_id_str = str(e.get('race_id', '')) if e.get('race_id') is not None else ''
-                is_flagged = (
-                    notepad_flags is not None
-                    and notepad_flags.get((race_id_str, hid_str), False)
-                )
+                nd = notepad_flags.get((race_id_str, hid_str)) if notepad_flags else None
 
+                # ── Res cell ────────────────────────────────────────────────────
                 res_str   = (str(rnk) + (f'/{rnrs}' if rnrs is not None else '')) if rnk is not None else '—'
                 lngs_html = (f'<br><span style="color:#999;font-size:9px">({lngs}l)</span>' if lngs else '')
                 lo_html   = (f'<br><span style="color:#555;font-size:9px">{lo:.1f}/1</span>' if lo is not None else '')
                 pos_bg  = MEDAL_BG.get(pos, 'transparent') if pos in (1, 2, 3) else 'transparent'
                 pos_col = 'white' if pos in (1, 2, 3) else '#444'
                 pos_br  = '3px'   if pos in (1, 2, 3) else '0'
-                notepad_html = (
-                    '<span style="position:absolute;top:1px;right:2px;font-size:9px;'
-                    'line-height:1;opacity:0.85" title="Notepad flag: unlucky run or strong finish">'
-                    '📓</span>'
-                    if is_flagged else ''
-                )
                 result_cells += (
                     f'<td style="padding:3px 5px;text-align:center;font-size:10px;'
-                    f'border-right:1px solid {c_border};min-width:{col_w};line-height:1.3;'
-                    f'position:relative">'
+                    f'border-right:1px solid {c_border};min-width:{col_w};line-height:1.3">'
                     f'<span style="background:{pos_bg};color:{pos_col};'
                     f'border-radius:{pos_br};padding:1px 3px;font-weight:bold;font-size:10px">'
-                    f'{res_str}</span>{lngs_html}{lo_html}{notepad_html}</td>')
+                    f'{res_str}</span>{lngs_html}{lo_html}</td>')
+
+                # ── Run cell: running position + finishing effort + hampered ────
+                if nd is not None:
+                    rp  = max(1, min(4, int(nd.get('running_position') or 2)))
+                    fe  = max(0, min(3, int(nd.get('finishing_effort') or 1)))
+                    hmp = bool(nd.get('hampered', False))
+
+                    # ── Position strip: 4 segments, active one coloured ──────────
+                    # Reads left-to-right as field positions: leading → at rear
+                    rp_col    = _RP_COL[rp]
+                    rp_titles = ['Führend', 'Prominent', 'Hinten im Mittelfeld', 'Weit hinten']
+                    rp_segs   = ''
+                    for qi in range(1, 5):
+                        if qi == rp:
+                            rp_segs += (
+                                f'<div style="width:8px;height:10px;background:{rp_col};'
+                                f'border-radius:1px" title="{rp_titles[rp-1]}"></div>'
+                            )
+                        else:
+                            rp_segs += (
+                                '<div style="width:8px;height:10px;background:#ccc;'
+                                'border-radius:1px;opacity:0.25"></div>'
+                            )
+                    rp_html = (
+                        f'<div style="display:inline-flex;gap:1px;'
+                        f'border-radius:2px;overflow:hidden">{rp_segs}</div>'
+                    )
+
+                    # ── Effort bars: 4-bar equalizer, fe 0→1 bar … 3→4 bars ─────
+                    fe_col    = _FE_COL[fe]
+                    fe_bars   = ''
+                    _bh       = [4, 6, 8, 10]
+                    filled    = fe + 1   # always at least 1 bar shown
+                    for bi in range(4):
+                        col = fe_col if bi < filled else '#ddd'
+                        fe_bars += (
+                            f'<div style="width:4px;height:{_bh[bi]}px;'
+                            f'background:{col};border-radius:1px" '
+                            f'title="Endspurt {fe}/3"></div>'
+                        )
+                    fe_html = (
+                        f'<div style="display:inline-flex;gap:1px;align-items:flex-end">'
+                        f'{fe_bars}</div>'
+                    )
+
+                    # ── Hampered badge: small red pill with × ────────────────────
+                    hmp_html = (
+                        '<div style="width:10px;height:10px;background:#e74c3c;'
+                        'border-radius:2px;display:flex;align-items:center;'
+                        'justify-content:center;flex-shrink:0" '
+                        'title="Behindert / kein freier Lauf">'
+                        '<span style="color:#fff;font-size:7px;font-weight:900;'
+                        'line-height:1;font-family:monospace">✕</span></div>'
+                        if hmp else
+                        '<div style="width:10px;height:10px;flex-shrink:0"></div>'
+                    )
+
+                    run_cells += (
+                        f'<td style="padding:2px 4px;text-align:center;'
+                        f'border-right:1px solid {c_border};min-width:{col_w}">'
+                        f'<div style="display:flex;flex-direction:column;'
+                        f'align-items:center;gap:2px">'
+                        f'{rp_html}'
+                        f'<div style="display:flex;align-items:flex-end;gap:3px">'
+                        f'{fe_html}{hmp_html}</div>'
+                        f'</div></td>'
+                    )
+                else:
+                    run_cells += (
+                        f'<td style="padding:2px 4px;text-align:center;font-size:10px;'
+                        f'color:#ddd;border-right:1px solid {c_border};min-width:{col_w}">—</td>'
+                    )
 
             # Jcky row: jockey name only (abbreviated), no pp
             jcky_cells = ''
@@ -2492,7 +2569,8 @@ def _render_runners_html(race_rows, runners_hist,
                 f'<tr><td style="{label_style}">Cond</td>{flag_cells}</tr>'
                 f'<tr style="background:#f8f9fc"><td style="{label_style}">€/R</td>{pm_cells}</tr>'
                 f'<tr><td style="{label_style}">Res</td>{result_cells}</tr>'
-                f'<tr style="background:#f8f9fc"><td style="{label_style}">Val.</td>{val_cells}</tr>'
+                f'<tr style="background:#f8f9fc"><td style="{label_style}">Run</td>{run_cells}</tr>'
+                f'<tr><td style="{label_style}">Val.</td>{val_cells}</tr>'
                 f'<tr><td style="{label_style}">ARR</td>{arr_cells}</tr>'
                 f'<tr style="background:#f8f9fc"><td style="{label_style}">FF</td>{ff_cells}</tr>'
                 f'<tr><td style="{label_style}">Jcky</td>{jcky_cells}</tr>'
