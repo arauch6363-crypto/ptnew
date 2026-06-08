@@ -756,8 +756,8 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=7):
 
         try:
             response = client.messages.create(
-                model='claude-haiku-4-5-20251001',
-                max_tokens=2048,
+                model='claude-sonnet-4-6',
+                max_tokens=4096,
                 system=SYSTEM_PROMPT_BATCH,
                 messages=[{'role': 'user', 'content': user_msg}],
             )
@@ -765,7 +765,7 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=7):
             if response.stop_reason == 'max_tokens':
                 print(
                     f'  ⚠️  TOKEN LIMIT: notepad batch {batch_idx+1} truncated '
-                    f'(max_tokens=2048, in={response.usage.input_tokens}, '
+                    f'(max_tokens=4096, in={response.usage.input_tokens}, '
                     f'out={response.usage.output_tokens}) — increase max_tokens or split batch'
                 )
 

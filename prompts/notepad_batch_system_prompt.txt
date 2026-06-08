@@ -37,19 +37,18 @@ finishing_effort — Stärke des Endspurts in den letzten ~2 Furlongs:
   Nutze 1 wenn unklar.
   WICHTIG: "a coincé pour finir", "a faibli", "s'est épuisé" = normales Ermüden → finishing_effort 0 oder 1, KEIN hampered.
 
-hampered — Wurde das Pferd durch EXTERNE, physische Einwirkung behindert?
-  true NUR bei:
-  - kein freier Lauf / keine Passage (bouché, manque de place, pris en sandwich, pas eu de passage)
-  - späte Passage / musste auf Lücke warten (n'a trouvé son passage qu'en fin de ligne, passage tardif, a dû attendre)
-  - Behinderung durch ein anderes Pferd (gêné, bousculé, coupé, interferé)
-  - Jockey hat Peitsche verloren (perdu sa cravache)
-  - Sturz/Kontakt mit anderem Pferd oder Rails
-  - Absichtliches oder unabsichtliches Abdrängen durch Konkurrenten
-  false bei:
-  - normalem Ermüden / Erschöpfung ("a coincé", "a faibli", "s'est épuisé")
-  - normalem Druck durch Konkurrenten im Rennverlauf ("a subi les attaques", "a résisté")
-  - schlechtem Startverhalten ohne äußere Einwirkung
-  - allgemein schlechter Leistung ohne externe Ursache
+hampered — Wurde das Pferd durch eine EXTERNE, physische Einwirkung in seiner Leistung beeinträchtigt?
+  true wenn aus dem Kontext hervorgeht, dass das Pferd:
+  - keinen freien Lauf hatte oder auf eine Lücke warten musste (auch spät im Rennen)
+  - durch ein anderes Pferd bedrängt, abgeschnitten, eingeklemmt oder behindert wurde
+  - den Jockey verloren hat oder der Jockey die Peitsche verlor
+  - Körperkontakt mit einem anderen Pferd oder der Bande hatte der seine Leistung beeinträchtigte
+  false wenn das Pferd lediglich:
+  - am Ende ermüdet oder eingebrochen ist (normales Nachlassen der Kräfte)
+  - normalem Druck und Konkurrenz durch Rivalen ausgesetzt war
+  - schlecht gestartet ist ohne äußere Einwirkung
+  - generell schwach gelaufen ist ohne externe Ursache
+  Entscheide anhand des Gesamtkontexts des comments — nicht anhand einzelner Wörter.
 
 Regeln: Valides JSON-Array für ALLE Pferde mit comment. Leeres Array [] nur wenn kein Pferd einen comment hat.
 Kein Text außerhalb des Arrays, keine Kommentare, kein Markdown.
