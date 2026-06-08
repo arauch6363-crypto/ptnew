@@ -2305,42 +2305,58 @@ def _render_runners_html(race_rows, runners_hist,
                     fe  = max(0, min(3, int(nd.get('finishing_effort') or 1)))
                     hmp = bool(nd.get('hampered', False))
 
-                    # 4 horse icons — active one highlighted in quartile colour
+                    # ── Position strip: 4 segments, active one coloured ──────────
+                    # Reads left-to-right as field positions: leading → at rear
                     rp_col    = _RP_COL[rp]
-                    rp_icons  = ''
-                    rp_titles = ['führend', 'prominent', 'hinten im Feld', 'weit hinten']
+                    rp_titles = ['Führend', 'Prominent', 'Hinten im Mittelfeld', 'Weit hinten']
+                    rp_segs   = ''
                     for qi in range(1, 5):
                         if qi == rp:
-                            rp_icons += (
-                                f'<span style="font-size:11px;'
-                                f'background:{rp_col}22;border-radius:2px;'
-                                f'outline:1px solid {rp_col};padding:0 1px;'
-                                f'line-height:1" title="{rp_titles[rp-1]}">🏇</span>'
+                            rp_segs += (
+                                f'<div style="width:8px;height:10px;background:{rp_col};'
+                                f'border-radius:1px" title="{rp_titles[rp-1]}"></div>'
                             )
                         else:
-                            rp_icons += '<span style="font-size:11px;opacity:0.15;line-height:1">🏇</span>'
+                            rp_segs += (
+                                '<div style="width:8px;height:10px;background:#ccc;'
+                                'border-radius:1px;opacity:0.25"></div>'
+                            )
+                    rp_html = (
+                        f'<div style="display:inline-flex;gap:1px;'
+                        f'border-radius:2px;overflow:hidden">{rp_segs}</div>'
+                    )
 
-                    # 3 strength bars — filled up to fe level
+                    # ── Effort bars: equalizer-style, heights 5/7/9px ────────────
                     fe_col   = _FE_COL[fe]
-                    fe_icons = ''
+                    fe_bars  = ''
+                    _bh = [5, 7, 9]
                     for bi in range(3):
                         if bi < fe:
-                            fe_icons += (
-                                f'<span style="display:inline-block;width:5px;height:8px;'
-                                f'background:{fe_col};border-radius:1px;margin:0 1px" '
-                                f'title="Endspurt {fe}/3"></span>'
+                            fe_bars += (
+                                f'<div style="width:4px;height:{_bh[bi]}px;'
+                                f'background:{fe_col};border-radius:1px" '
+                                f'title="Endspurt {fe}/3"></div>'
                             )
                         else:
-                            fe_icons += (
-                                '<span style="display:inline-block;width:5px;height:8px;'
-                                'background:#ddd;border-radius:1px;margin:0 1px"></span>'
+                            fe_bars += (
+                                f'<div style="width:4px;height:{_bh[bi]}px;'
+                                f'background:#ddd;border-radius:1px"></div>'
                             )
+                    fe_html = (
+                        f'<div style="display:inline-flex;gap:1px;align-items:flex-end">'
+                        f'{fe_bars}</div>'
+                    )
 
-                    # Hampered indicator
+                    # ── Hampered badge: small red pill with × ────────────────────
                     hmp_html = (
-                        '<span style="font-size:9px;margin-left:2px" '
-                        'title="Behindert / kein freier Lauf">⚠️</span>'
-                        if hmp else ''
+                        '<div style="width:10px;height:10px;background:#e74c3c;'
+                        'border-radius:2px;display:flex;align-items:center;'
+                        'justify-content:center;flex-shrink:0" '
+                        'title="Behindert / kein freier Lauf">'
+                        '<span style="color:#fff;font-size:7px;font-weight:900;'
+                        'line-height:1;font-family:monospace">✕</span></div>'
+                        if hmp else
+                        '<div style="width:10px;height:10px;flex-shrink:0"></div>'
                     )
 
                     run_cells += (
@@ -2348,9 +2364,9 @@ def _render_runners_html(race_rows, runners_hist,
                         f'border-right:1px solid {c_border};min-width:{col_w}">'
                         f'<div style="display:flex;flex-direction:column;'
                         f'align-items:center;gap:2px">'
-                        f'<div style="white-space:nowrap">{rp_icons}</div>'
-                        f'<div style="display:flex;align-items:flex-end">'
-                        f'{fe_icons}{hmp_html}</div>'
+                        f'{rp_html}'
+                        f'<div style="display:flex;align-items:flex-end;gap:3px">'
+                        f'{fe_html}{hmp_html}</div>'
                         f'</div></td>'
                     )
                 else:
