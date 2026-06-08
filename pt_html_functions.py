@@ -755,26 +755,69 @@ def compute_notepad_flags(df_today, runners_hist, max_races_per_horse=7):
         user_msg = json.dumps(payload, ensure_ascii=False)
 
         try:
-            response = client.messages.create(
-                model='claude-sonnet-4-6',
-                max_tokens=4096,
-                system=SYSTEM_PROMPT_BATCH,
-                messages=[{'role': 'user', 'content': user_msg}],
-            )
-            raw = response.content[0].text.strip()
+            def _call_api(max_tok: int):
+                return client.messages.create(
+                    model='claude-sonnet-4-6',
+                    max_tokens=max_tok,
+                    system=[{
+                        'type': 'text',
+                        'text': SYSTEM_PROMPT_BATCH,
+                        'cache_control': {'type': 'ephemeral'},
+                    }],
+                    messages=[{'role': 'user', 'content': user_msg}],
+                )
+
+            MAX_TOK_INITIAL = 8192
+            response = _call_api(MAX_TOK_INITIAL)
+
             if response.stop_reason == 'max_tokens':
                 print(
-                    f'  ⚠️  TOKEN LIMIT: notepad batch {batch_idx+1} truncated '
-                    f'(max_tokens=4096, in={response.usage.input_tokens}, '
-                    f'out={response.usage.output_tokens}) — increase max_tokens or split batch'
+                    f'  ⚠️  TOKEN LIMIT on batch {batch_idx+1} at {MAX_TOK_INITIAL} tokens '
+                    f'(in={response.usage.input_tokens}, out={response.usage.output_tokens}) '
+                    f'— retrying with 16 384 tokens'
+                )
+                response = _call_api(16384)
+
+            raw = response.content[0].text.strip()
+
+            if response.stop_reason == 'max_tokens':
+                print(
+                    f'  ⚠️  TOKEN LIMIT on batch {batch_idx+1} even at 16 384 tokens '
+                    f'(out={response.usage.output_tokens}) — will try to salvage partial JSON'
                 )
 
             # strip accidental markdown fences
             if raw.startswith('```'):
                 raw = raw.split('\n', 1)[-1]
                 raw = raw.rsplit('```', 1)[0]
+            raw = raw.strip()
 
-            results = json.loads(raw)
+            # if the model prefixed analysis text, extract the JSON array
+            if not raw.startswith('['):
+                import re as _re
+                m = _re.search(r'\[.*', raw, _re.DOTALL)
+                if m:
+                    raw = m.group(0)
+                    # attempt to close truncated array
+                    try:
+                        results = json.loads(raw)
+                    except json.JSONDecodeError:
+                        # find the last complete object and close the array
+                        last_brace = raw.rfind('}')
+                        if last_brace != -1:
+                            raw = raw[:last_brace + 1] + ']'
+                        results = json.loads(raw)
+                else:
+                    raise json.JSONDecodeError('no JSON array found in response', raw, 0)
+            else:
+                try:
+                    results = json.loads(raw)
+                except json.JSONDecodeError:
+                    # truncated array — close it after the last complete object
+                    last_brace = raw.rfind('}')
+                    if last_brace != -1:
+                        raw = raw[:last_brace + 1] + ']'
+                    results = json.loads(raw)
 
             n_parsed = 0
             for item in results:
