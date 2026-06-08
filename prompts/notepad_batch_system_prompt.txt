@@ -21,20 +21,22 @@ Ein Kommentar beschreibt meist einen VERLAUF: Frühphase → Hauptteil/Kurve →
   • finishing_effort bezieht sich NUR auf die letzten ~2 Furlongs (Endspurt).
 
 ────────────────────────────────────────────────────────
-running_position — Laufposition im Hauptteil, VOR dem Endspurt. 5 Quintile vorne→hinten.
+running_position — Position UND Laufstil entlang der Achse vorne→hinten (5 Quintile).
+Der Laufstil ist die wichtigste Evidenz für die Position: ein Frontläufer steht vorne,
+ein zurückgehaltenes Pferd hinten.
 
-  1 = Führend / sehr prominent
+  1 = Spitze / Frontläufer
       "en tête", "aux avant-postes", "premiers rangs", "groupe/trio de tête",
-      "tête du peloton", Kommentar beginnt mit "Animateur,"/"Animatrice," (Subjekt führte),
+      Kommentar beginnt mit "Animateur,"/"Animatrice," (Subjekt führte selbst),
       "dans le sillage / au côté / derrière l'animateur" (direkt hinter dem Tempomacher)
-  2 = Vorderes Mittelfeld
+  2 = Prominent / vorderes Mittelfeld
       "bon rang", "bien placé", "derrière les premiers", "au contact des animateurs",
-      "léger retrait des animateurs" (knapp hinter der Spitze)
+      "léger retrait des animateurs"
   3 = Mittelfeld
-      "au sein du peloton", "mi-peloton", "milieu de peloton", "en embuscade" (ohne weitere Angabe)
-  4 = Hinteres Mittelfeld
-      "seconde moitié du peloton", "dernier tiers du peloton", "galopé/patienté en retrait"
-  5 = Weit hinten / abgehängt
+      "au sein du peloton", "mi-peloton", "milieu de peloton", "en embuscade"
+  4 = Zurückhaltend / hinteres Mittelfeld
+      "seconde moitié du peloton", "dernier tiers", "galopé/patienté en retrait"
+  5 = Closer / weit hinten
       "queue de peloton", "arrière-garde", "dernière position", "parmi les derniers",
       "a fermé la marche", "relégué en queue"
 
@@ -44,8 +46,11 @@ running_position — Laufposition im Hauptteil, VOR dem Endspurt. 5 Quintile vor
   • "animateur/animatrice" MIT folgendem Pferdenamen oder nach "sillage/derrière/côté de"
     = ein ANDERES Pferd (Tempomacher). Das Subjekt führt nur, wenn das Wort es selbst
     bezeichnet (meist satzinitial "Animateur, ...").
+  • Stil-Unterscheidung bei hohen Werten: bewusst zurückgehalten ("attentiste/patient/
+    en embuscade ... puis a progressé" = Closer) und zwangsweise hinten ("vite relégué/
+    distancé/n'a pu suivre") ergeben beide 4–5 — beides korrekt als hintere Position.
   • "en retrait" allein = zurückgehalten/hinten (4–5); "léger retrait DES ANIMATEURS" = vorne (2).
-  • Bei beschriebenem Aufrücken die Position kurz VOR dem Finish nehmen
+  • Bei Aufrücken die Position kurz VOR dem Finish nehmen
     ("Parmi les derniers, a progressé ... dans le tournant" → Position an der Kurve, nicht 5).
   Nutze 3 wenn unklar oder keine Information.
 
@@ -57,12 +62,11 @@ lane_position — Laterale Position (Abstand zur Innenbahn/Rail).
   2 = Mitte
       "au centre", "en pleine piste", "milieu de piste"
   3 = Außenbahn / weit außen
-      "en dehors", "à l'extérieur", "dehors", "(s'est décalé) au large", "rail extérieur",
-      "tout en dehors"
+      "en dehors", "à l'extérieur", "dehors", "au large", "rail extérieur", "tout en dehors"
 
   WICHTIG — "ligne" ist KEINE Bahn (häufigster Fehler!):
-  • "ligne droite" = Zielgerade, "ligne opposée / d'en face" = Gegengerade
-    → reine Streckenangabe, NICHT lateral.
+  • "ligne droite" = Zielgerade, "ligne opposée / d'en face" = Gegengerade → reine
+    Streckenangabe, NICHT lateral.
   • "deuxième/troisième ligne" = Reihe in der Tiefe (wie weit vorn), NICHT lateral.
   • Laterale Info kommt AUSSCHLIESSLICH aus corde/dedans/rail bzw. centre/pleine piste
     bzw. dehors/extérieur.
@@ -74,106 +78,116 @@ lane_position — Laterale Position (Abstand zur Innenbahn/Rail).
 
 ────────────────────────────────────────────────────────
 finishing_effort — Stärke des Endspurts in den letzten ~2 Furlongs.
+KAMPFBEREITSCHAFT zählt als Effort: ein Pferd, das kämpft, hat einen besseren Effort
+gezeigt — auch wenn es geschlagen wird.
 
   3 = Sehr stark
       "a fini fort", "(le) plus vite", "le mieux terminé", "très bien fini",
       "remarquablement", "fini de plus en plus vite", "s'est imposé nettement/aisément",
-      "a fait la décision / la différence", "très bien allongé", "bien sprinté"
+      "a fait la décision / la différence", "très bien allongé", "bien sprinté",
+      ODER klarer Kampf bis zum Ende KOMBINIERT mit starkem Finish
+      ("a lutté jusqu'au bout et s'est imposé de haute lutte")
   2 = Stark
-      "a bien fini/terminé", "bon/bel effort", "courageux/courageuse", "bien accéléré",
-      "a bien lutté", "a tracé une belle ligne droite", "s'est imposé de haute lutte"
+      "a bien fini/terminé", "bon/bel effort", "bien accéléré", "a tracé une belle ligne droite",
+      sowie KAMPF/MUT: "courageux/courageuse(ment)", "vaillamment", "a lutté",
+      "lutté jusqu'au bout", "accrocheur/se", "de haute lutte", "s'est employé/battu",
+      "sans démériter" (kämpfte ehrlich, auch wenn geschlagen)
   1 = Mäßig / normal
       "à son rythme", "correctement", "honorablement", "convenablement", "assez bien",
-      "pas mal fini/terminé", "sans démériter", "n'a pas si mal conclu", neutrales "a conclu/terminé"
+      "pas mal fini/terminé", "n'a pas si mal conclu", neutrales "a conclu/terminé",
+      ODER hat zunächst gekämpft, DANN aber klar nachgelassen ("a lutté ... puis a faibli/coincé")
   0 = Schwach / kein Effort
       "a faibli", "a cédé", "a coincé", "s'est épuisé", "marqué le pas", "plafonné",
-      "rentré dans le rang", "baissé pavillon", "fini/terminé loin",
-      "n'a pu accélérer / changer de vitesse / hausser le ton / suivre (le mouvement)",
-      "n'a joué aucun rôle", "n'a pu se montrer dangereux/menaçant" (im Sinne von ausgelaufen)
+      "rentré dans le rang", "baissé pavillon", "fini/terminé loin", "n'a joué aucun rôle",
+      "n'a pu accélérer / changer de vitesse / hausser le ton / suivre (le mouvement)"
 
   WICHTIG:
-  • finishing_effort misst den gezeigten ENDSPURT, nicht das Resultat. "échouant de peu"
-    (knapp verfehlt) sagt nichts über den Effort — am Effort-Vokabular orientieren.
+  • finishing_effort misst gezeigten EINSATZ, nicht das Resultat. "échouant de peu"
+    sagt nichts über den Effort; ein Pferd kann hart kämpfen UND knapp verlieren → 2.
+  • Kampf-Wort hebt den Effort an (mind. 2). Wird der Kampf aber ausdrücklich von klarem
+    Einbruch abgelöst ("a lutté ... puis a nettement faibli"), zählt der Endzustand → 1.
   • Ergebnis-/Konkurrenzwörter (dominé, débordé, battu) betreffen NICHT den Effort.
   Nutze 1 wenn unklar.
 
 ────────────────────────────────────────────────────────
-hampered — Wurde das Pferd durch eine EXTERNE, PHYSISCHE Behinderung daran gehindert,
-sein eigenes Rennen zu laufen?
+hampered — Hat der Rennverlauf die WAHRE Leistung des Pferdes VERZERRT, sodass das
+Ergebnis sie unterschätzt? true, wenn das Pferd entweder (A) extern physisch behindert
+wurde ODER (B) klar mehr zu bieten hatte, es aber wegen des Verlaufs nicht zeigen konnte.
 
 KERNFRAGE (zuerst intern beantworten, DANN true/false setzen):
-"Fehlte dem Pferd physisch der Weg/Platz, sodass es seinen Lauf NICHT abrufen konnte,
-weil ein anderes Pferd / die Bande / eine geschlossene Lücke es daran hinderte?"
+"Fehlte dem Pferd physisch der Weg/Platz, ODER hatte es sichtbar Reserven, die es wegen
+mangelnden Platzes / Pech NICHT abrufen konnte?"
   - JA → true
-  - NEIN (nur ermüdet, überholt, herausgefordert, oder selbst ausgeschert) → false
+  - NEIN (nur ermüdet, überholt, herausgefordert, selbst ausgeschert, oder schlicht
+    sein Maximum gelaufen) → false
 
 WICHTIGSTE REGEL — WETTKAMPF UND ERMÜDEN SIND KEIN hampering:
-Ein Pferd, das überholt, bezwungen oder im Spurt herausgefordert wird ODER von selbst
-nachlässt, ist NICHT behindert — es ist schlicht geschlagen oder müde.
+Ein Pferd, das überholt, bezwungen oder herausgefordert wird ODER von selbst nachlässt,
+ist NICHT verzerrt — es ist geschlagen oder müde.
 
 ▼ false (trotz dramatischer Wortwahl) — der HÄUFIGSTE Fall:
-  Konkurrenz / überholt:
-    "dominé(e)", "débordé(e)", "rejoint", "repris", "battu",
-    "subir l'assaut / l'attaque / les attaques de [Pferd]", "double assaut",
-    "n'a pu contrer / endiguer / rivaliser / résister à [Pferd]"
-  Ermüden / Limit:
-    "a coincé" (allein), "a faibli", "s'est épuisé", "a cédé", "plafonné",
+  Konkurrenz/überholt: "dominé(e)", "débordé(e)", "rejoint", "repris", "battu",
+    "subir l'assaut/l'attaque/les attaques de [Pferd]", "n'a pu contrer/rivaliser/résister à [Pferd]"
+  Ermüden/Limit: "a coincé" (allein), "a faibli", "s'est épuisé", "a cédé", "plafonné",
     "marqué le pas", "rentré dans le rang", "fait illusion",
-    "n'a pu hausser le ton / accélérer / changer de vitesse / suivre le mouvement"
-  POSITIONS-Ausdrücke (KEINE Behinderung!):
-    "a fermé la marche" = lief als Letzter (NICHT "enfermé"!)
-    "arrivée serrée" / "serré" = knappes Finish (NICHT eingeklemmt!)
-    "sur les talons de [Pferd]" = dicht dahinter platziert
-  Eigenes Verhalten (keine externe Ursache):
-    "s'est dérobé(e)" = schert selbst aus / verweigert,
-    schlechter/nervöser Start ohne fremde Einwirkung ("tendu dans les boîtes")
+    "n'a pu hausser le ton/accélérer/changer de vitesse/suivre le mouvement"
+  Positions-Ausdrücke: "a fermé la marche" (lief Letzter), "arrivée serrée"/"serré" (knappes
+    Finish), "sur les talons de [Pferd]" (dahinter platziert)
+  Eigenes Verhalten: "s'est dérobé(e)", schlechter/nervöser Start ohne fremde Einwirkung
+  WICHTIG: Ein souveräner/leichter Sieg ("facilement", "aisément", "avec des ressources" als
+    SIEGER) ist KEIN hampered — das spiegelt sich bereits in finishing_effort wider.
 
-▲ true — NUR bei EXPLIZITER externer physischer Behinderung:
-  Eingeschlossen / kein Platz:
-    "enfermé(e)", "resté enfermé", "bloqué(e) (derrière [Pferd])",
+▲ true — (A) EXPLIZITE externe physische Behinderung:
+  Eingeschlossen/kein Platz: "enfermé(e)", "resté enfermé", "bloqué(e) (derrière [Pferd])",
     "le passage s'est (re)fermé", "n'a pas eu / n'a pu avoir ses aises",
     "coincé ENTRE deux concurrents", "à la corde sans pouvoir sortir", "sans solution"
-  Aktiv behindert durch anderes Pferd:
-    "gêné(e) par [Pferd]", "bousculé(e)", "tassé(e) par [Pferd] / contre le rail",
-    "serré contre la corde / le rail", "contrarié(e) par [Pferd]"
-    (Richtung beachten: "a tassé/gêné [Pferd]" = es behinderte SELBST → für DIESES Pferd false)
-  Sturz/Verlust:
-    "a perdu son jockey", Jockey "a perdu sa cravache / son fouet", "a buté",
+  Aktiv behindert: "gêné(e) par [Pferd]", "bousculé(e)", "tassé(e) par [Pferd]/contre le rail",
+    "serré contre la corde/le rail", "contrarié(e) par [Pferd]"
+    (Richtung beachten: "a tassé/gêné [Pferd]" = behinderte SELBST → für DIESES Pferd false)
+  Sturz/Verlust: "a perdu son jockey", Jockey "a perdu sa cravache/son fouet", "a buté",
     "stoppé dans son effort", Kontakt mit Bande/Pferd mit Leistungsverlust
-  Indiz: oft folgt "puis s'est relancé(e)" / "laissant des regrets" / "aurait pu mieux".
+
+▲ true — (B) UPSIDE: hatte sichtbar mehr zu bieten, durch den Verlauf verhindert:
+    "laissant des regrets", "(de gros) regrets", "malchanceux/malchanceuse",
+    "n'a pu s'exprimer", "aurait pu espérer (mieux)", "aurait lutté pour ...",
+    "avait du gaz / des ressources" IM Zusammenhang mit fehlendem Platz/Behinderung
+    (z. B. "enfermé ... avec beaucoup de ressources", "n'a pas eu ses aises ... avait du gaz").
+    NUR wenn die Reserve unausgeschöpft blieb WEGEN Verlauf/Pech — nicht bei freiem Lauf.
 
 FALLEN (Konstruktion beachten, nicht nur das Wort):
   "a coincé" allein → ermüdet → false   |   "coincé entre" → eingeklemmt → true
   "a fermé la marche" → Letzter → false |   "enfermé / passage s'est refermé" → true
   "arrivée serrée" → knapp → false      |   "serré contre le rail" → eingedrückt → true
-  "sur les talons de X" → Position → false
+  "ressources" als Sieger → false       |   "ressources" + enfermé/sans aises → true
 
 Entscheide hampered IMMER anhand des Gesamtkontexts — nie anhand eines einzelnen Wortes.
 
 ────────────────────────────────────────────────────────
 BEISPIELE (Kommentar → erwartete Felder):
 
-"Animatrice, est bien repartie au centre et a eu sa chance, puis, débordée par
- Kaneshya, a perdu les accessits pour finir."
+"Animatrice, est bien repartie au centre, puis, débordée par Kaneshya, a perdu les accessits."
  → running_position 1, lane_position 2, finishing_effort 0, hampered false
-
-"Parmi les dernières, a progressé en dehors à quatre cents mètres, mais n'a pu
- changer de vitesse."
- → running_position 4, lane_position 3, finishing_effort 0, hampered false
 
 "Attentiste en bon rang, a suivi l'accélération et s'est imposé nettement."
  → running_position 2, lane_position 2, finishing_effort 3, hampered false
 
-"Sur une troisième ligne à la corde, a bien fini, avant d'être gêné par Saguaro
- et d'échouer de peu pour une place."
+"Au sein du peloton, a lutté courageusement jusqu'au bout, sans pouvoir contrer le vainqueur."
+ → running_position 3, lane_position 2, finishing_effort 2, hampered false
+
+"Sur une troisième ligne à la corde, a bien fini, avant d'être gêné par Saguaro et d'échouer
+ de peu pour une place."
  → running_position 3, lane_position 1, finishing_effort 2, hampered true
 
-"Attentiste en retrait, se rapprochait côté corde lorsque le passage s'est refermé
+"Attentiste en retrait, se rapprochait côté corde avec du gaz lorsque le passage s'est refermé
  à la distance ; aurait pu espérer mieux."
  → running_position 4, lane_position 1, finishing_effort 1, hampered true
 
 "Vite aux avant-postes, a fait illusion longtemps avant de coincer à la fin."
  → running_position 1, lane_position 2, finishing_effort 0, hampered false
+
+"Relégué en queue de peloton, malchanceux, est resté enfermé jusqu'à la distance avec des
+ ressources, puis a bien fini sans pouvoir remonter le vainqueur."
+ → running_position 5, lane_position 1, finishing_effort 2, hampered true
 
 ────────────────────────────────────────────────────────
 REGELN: Valides JSON-Array für ALLE Pferde mit comment. Leeres Array [] nur wenn kein Pferd
