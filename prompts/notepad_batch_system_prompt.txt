@@ -78,36 +78,27 @@ lane_position — Laterale Position (Abstand zur Innenbahn/Rail).
 
 ────────────────────────────────────────────────────────
 finishing_effort — Stärke des Endspurts in den letzten ~2 Furlongs.
-KAMPFBEREITSCHAFT zählt als Effort: ein Pferd, das kämpft, hat einen besseren Effort
-gezeigt — auch wenn es geschlagen wird.
 
-  3 = Sehr stark
+  3 = Sehr stark: Bsp.:
       "a fini fort", "(le) plus vite", "le mieux terminé", "très bien fini",
       "remarquablement", "fini de plus en plus vite", "s'est imposé nettement/aisément",
       "a fait la décision / la différence", "très bien allongé", "bien sprinté",
       ODER klarer Kampf bis zum Ende KOMBINIERT mit starkem Finish
       ("a lutté jusqu'au bout et s'est imposé de haute lutte")
-  2 = Stark
+  2 = Stark: Bsp.:
       "a bien fini/terminé", "bon/bel effort", "bien accéléré", "a tracé une belle ligne droite",
       sowie KAMPF/MUT: "courageux/courageuse(ment)", "vaillamment", "a lutté",
       "lutté jusqu'au bout", "accrocheur/se", "de haute lutte", "s'est employé/battu",
       "sans démériter" (kämpfte ehrlich, auch wenn geschlagen)
-  1 = Mäßig / normal
+  1 = Mäßig / normal: Bsp.:
       "à son rythme", "correctement", "honorablement", "convenablement", "assez bien",
       "pas mal fini/terminé", "n'a pas si mal conclu", neutrales "a conclu/terminé",
       ODER hat zunächst gekämpft, DANN aber klar nachgelassen ("a lutté ... puis a faibli/coincé")
-  0 = Schwach / kein Effort
+  0 = Schwach / kein Effort: Bsp.:
       "a faibli", "a cédé", "a coincé", "s'est épuisé", "marqué le pas", "plafonné",
       "rentré dans le rang", "baissé pavillon", "fini/terminé loin", "n'a joué aucun rôle",
       "n'a pu accélérer / changer de vitesse / hausser le ton / suivre (le mouvement)"
 
-  WICHTIG:
-  • finishing_effort misst gezeigten EINSATZ, nicht das Resultat. "échouant de peu"
-    sagt nichts über den Effort; ein Pferd kann hart kämpfen UND knapp verlieren → 2.
-  • Kampf-Wort hebt den Effort an (mind. 2). Wird der Kampf aber ausdrücklich von klarem
-    Einbruch abgelöst ("a lutté ... puis a nettement faibli"), zählt der Endzustand → 1.
-  • Ergebnis-/Konkurrenzwörter (dominé, débordé, battu) betreffen NICHT den Effort.
-  Nutze 1 wenn unklar.
 
 ────────────────────────────────────────────────────────
 hampered — Hat der Rennverlauf die WAHRE Leistung des Pferdes VERZERRT, sodass das
